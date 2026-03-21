@@ -29,6 +29,7 @@ const GOALS=[
   {v:"Maintien du poids",icon:"🎯",desc:"Rester dans la bonne fourchette"},
   {v:"Remise en forme",icon:"💪",desc:"Améliorer l'endurance et la musculature"},
   {v:"Stimulation mentale",icon:"🧠",desc:"Réduire l'anxiété et l'ennui"},
+  {v:"Prise de poids",icon:"🍖",desc:"Atteindre un poids idéal en augmentant la masse musculaire"},
 ];
 const DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const DAYS_SHORT=["L","M","M","J","V","S","D"];
@@ -845,6 +846,14 @@ RÈGLES STRICTES — respecter sans exception :
 
 7. La durée affichée doit être réaliste et inclure la préparation si nécessaire. Ex : "Kong congelé : 5 min de préparation la veille + 20 min d'occupation".
 
+9. Si l'objectif inclut "Prise de poids" :
+   - Ne JAMAIS réduire la ration alimentaire — au contraire, augmenter de 10 à 20%
+   - Favoriser des exercices de renforcement musculaire (montées de côtes, résistance, jeux de traction)
+   - Éviter les exercices cardio intensifs qui brûlent trop de calories
+   - Dans le plan nutritionnel, recommended_ration_g doit être SUPÉRIEUR à current_ration_g
+   - reduction_pct doit être négatif (ex: -15 signifie +15% de ration)
+   - Mentionner dans les breed_tips l'importance des protéines et des graisses saines
+
 8. Adapter chaque jour du programme à la météo réelle :
    - Si température > 28°C : éviter les sorties entre 11h et 17h, mentionner les horaires dans breed_note
    - Si température < 5°C : réduire la durée des sorties pour les races sensibles au froid (Chihuahua, Yorkshire, Bouledogue)
@@ -973,7 +982,7 @@ Réponds UNIQUEMENT en JSON valide :
         <div className="ssub">Poids idéal estimé pour {breedName} : {bi.ideal[0]}–{bi.ideal[1]} kg.</div>
         <div className="rrow"><span className="flbl">Poids actuel</span><span className="rval">{d.weight} kg</span></div>
         <input type="range" min="1" max="80" step="0.5" value={d.weight} onChange={e=>upd({weight:parseFloat(e.target.value)})}/>
-        <div className="wi">{d.weight-ideal>0?`⚠️ ${d.name} est en surpoids de +${(d.weight-ideal).toFixed(1)} kg`:`✅ ${d.name} est dans la fourchette idéale`}</div>
+        <div className="wi">{(()=>{const diff=d.weight-ideal;if(diff>2)return `⚠️ ${d.name} est en surpoids de +${diff.toFixed(1)} kg — programme perte de poids recommandé`;if(diff<-2)return `📈 ${d.name} est en sous-poids de ${Math.abs(diff).toFixed(1)} kg — programme prise de poids recommandé`;return `✅ ${d.name} est dans la fourchette idéale pour sa race`;})()}</div>
         <div className="snav">
           <button className="btn btn-ghost" onClick={()=>go(3)}>← Retour</button>
           <button className="btn btn-g" onClick={()=>go(5)}>Continuer →</button>
@@ -1299,7 +1308,7 @@ Réponds UNIQUEMENT en JSON :
             <div className="nc">
               <div className="nr"><div className="nk">🔥 Calories/jour</div><div className="nv hl">{currentPlan?.nutrition?.daily_calories} kcal</div></div>
               <div className="nr"><div className="nk">🥣 Ration recommandée</div><div className="nv gr">{currentPlan?.nutrition?.recommended_ration_g} g/j</div></div>
-              {currentPlan?.nutrition?.reduction_pct>0&&<div className="nr"><div className="nk">📉 Réduction</div><div className="nv" style={{color:"var(--a)"}}>-{currentPlan.nutrition.reduction_pct}%</div></div>}
+              {currentPlan?.nutrition?.reduction_pct!==0&&currentPlan?.nutrition?.reduction_pct!=null&&<div className="nr"><div className="nk">{currentPlan.nutrition.reduction_pct<0?"📈 Augmentation vs ration actuelle":"📉 Réduction"}</div><div className="nv" style={{color:currentPlan.nutrition.reduction_pct<0?"var(--g, #22c55e)":"var(--a)"}}>{currentPlan.nutrition.reduction_pct<0?`+${Math.abs(currentPlan.nutrition.reduction_pct)}%`:`-${currentPlan.nutrition.reduction_pct}%`}</div></div>}
               <div className="nr"><div className="nk">🦴 Treats max/jour</div><div className="nv">{currentPlan?.nutrition?.treats_max_per_day}</div></div>
               <div className="nr"><div className="nk">💧 Eau recommandée</div><div className="nv">{currentPlan?.nutrition?.water_ml} ml</div></div>
               {currentPlan?.nutrition?.note&&<div style={{marginTop:10,padding:"9px 12px",background:"var(--ap)",borderRadius:8,fontSize:11,color:"var(--tm)",fontStyle:"italic"}}>💡 {currentPlan.nutrition.note}</div>}
