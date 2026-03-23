@@ -73,7 +73,6 @@ h1 em{font-style:italic;color:var(--a)}
 .btn-ghost{background:transparent;color:var(--tm);border:1.5px solid var(--cd)}
 .btn-ghost:hover{border-color:var(--ts)}
 .btn-a{background:var(--a);color:#fff}
-.btn-a:hover{background:var(--al)}
 .btn-red{background:#DC2626;color:#fff}
 .btn-sm{padding:8px 16px;font-size:12px}
 
@@ -93,6 +92,7 @@ h1 em{font-style:italic;color:var(--a)}
 .hint{font-size:11px;color:var(--ts);margin-top:4px;font-style:italic}
 .opts{display:grid;gap:9px}
 .opts.c2{grid-template-columns:1fr 1fr}
+.opts.c3{grid-template-columns:1fr 1fr 1fr}
 .oc{padding:13px 15px;border:2px solid var(--cd);border-radius:12px;cursor:pointer;transition:all .2s;background:#fff;display:flex;align-items:flex-start;gap:11px}
 .oc:hover{border-color:var(--al);background:var(--ap)}
 .oc.sel{border-color:var(--a);background:var(--ap);box-shadow:0 0 0 3px rgba(232,130,12,.1)}
@@ -140,20 +140,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 /* DASHBOARD */
 .dash{display:flex;flex-direction:column;flex:1;animation:fu .3s ease}
-.dhead{background:linear-gradient(135deg,var(--g) 0%,var(--gm) 100%);padding:22px 22px 0;color:#fff}
-.dhead-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
-.dog-info h2{font-family:'Fraunces',serif;font-size:22px;font-weight:900;margin-bottom:3px}
-.dog-info p{font-size:12px;opacity:.8}
-.dog-avatar{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;flex-shrink:0}
-.dog-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.week-badge{background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-top:10px;display:inline-block}
-.progress-ring{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;opacity:.9}
-.tabs{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:10px 10px 0 0;padding:4px 4px 0;margin-top:16px}
-.tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s;border:none;background:transparent}
-.tab.active{background:var(--cr);color:var(--g)}
-.tab:hover:not(.active){color:#fff}
-.tab-icon{font-size:14px;display:block;margin-bottom:2px}
-.dcontent{flex:1;padding:18px 22px 80px;max-width:720px;width:100%;margin:0 auto}
+
+/* HOME HEADER */
+.home-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+.home-greeting{font-family:'Fraunces',serif;font-size:26px;font-weight:900;color:var(--g);line-height:1.1}
+.home-sub{font-size:13px;color:var(--ts);margin-top:5px;line-height:1.5}
+.home-avatar{width:46px;height:46px;border-radius:50%;background:var(--g);color:#fff;font-family:'Fraunces',serif;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* PROFILE CARD */
+.profile-card{background:#1C3D2A;border-radius:16px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;color:#fff}
+.pc-left{display:flex;align-items:center;gap:12px}
+.pc-emoji{font-size:28px;line-height:1}
+.pc-name{font-family:'Fraunces',serif;font-size:18px;font-weight:900;line-height:1.1}
+.pc-info{font-size:12px;opacity:.75;margin-top:3px}
+.pc-badge{background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.pc-badge.warn{background:#DC2626}
+.pc-badge.under{background:#F59E0B}
+
+/* MINI CARDS */
+.mini-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.mini-card{background:#fff;border-radius:14px;padding:14px 8px;text-align:center;box-shadow:0 2px 8px rgba(26,18,9,.06);border:1px solid var(--cd)}
+.mc-icon{font-size:20px;margin-bottom:6px;line-height:1}
+.mc-val{font-family:'Fraunces',serif;font-size:19px;font-weight:900;color:var(--g);line-height:1}
+.mc-unit{font-size:10px;font-weight:600;color:var(--ts);margin-left:1px}
+.mc-lbl{font-size:10px;color:var(--ts);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* PROGRESS CARD */
+.prog-card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:14px;border:1px solid var(--cd);box-shadow:0 2px 8px rgba(26,18,9,.06)}
+.prog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.prog-title{font-size:13px;font-weight:600;color:var(--tx)}
+.prog-count{font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:#B8880A}
+.prog-bar{height:8px;background:#E4E8E4;border-radius:10px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,#1C3D2A,#8A9A28);border-radius:10px;transition:width .5s ease}
+
+/* CONSEIL CARD */
+.conseil-card{background:#EEF5EF;border-radius:14px;padding:14px 16px;margin-bottom:18px;border:1px solid rgba(45,100,68,.15)}
+.cc-title{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cc-bullets{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.cc-bullet{font-size:13px;color:var(--tm);line-height:1.6;padding-left:16px;position:relative}
+.cc-bullet::before{content:"•";position:absolute;left:0;color:var(--a);font-weight:900;font-size:14px;line-height:1.4}
+
+/* PROGRAMME LINK BUTTON */
+.prog-link{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:14px;padding:14px 16px;border:1px solid var(--cd);box-shadow:0 2px 8px rgba(26,18,9,.06);cursor:pointer;transition:all .2s;margin-bottom:16px}
+.prog-link:hover{border-color:var(--al);box-shadow:var(--sh)}
+.prog-link-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--tx)}
+.prog-link-chevron{font-size:16px;color:var(--ts);transition:transform .2s}
+.prog-link.open .prog-link-chevron{transform:rotate(90deg)}
+
+/* LAYOUT */
+.dash{padding-top:52px}
+.dash-layout{display:flex;flex:1;overflow:hidden}
+.dash-main{flex:1;overflow-y:auto;padding:18px 22px 24px}
+
+/* DASHBOARD HEADER */
+.dash-header{position:fixed;top:0;left:0;right:0;height:52px;background:#fff;border-bottom:1px solid var(--cd);display:flex;align-items:center;justify-content:center;z-index:300;padding:0 16px}
+.dash-hamburger{position:absolute;left:16px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:6px}
+.dash-hamburger span{display:block;width:22px;height:2px;background:var(--g);border-radius:2px;transition:all .3s}
+.dash-logo{font-family:'Fraunces',serif;font-weight:900;font-size:18px;color:var(--g)}
+.dash-logo em{font-style:normal;color:var(--a)}
+
+/* DRAWER OVERLAY */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;opacity:0;pointer-events:none;transition:opacity .3s}
+.drawer-overlay.open{opacity:1;pointer-events:auto}
+
+/* DRAWER */
+.drawer{position:fixed;top:0;left:0;bottom:0;width:280px;background:#fff;z-index:500;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:4px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:20px 20px 16px;border-bottom:1px solid var(--cd);display:flex;align-items:center;justify-content:space-between}
+.drawer-logo{font-family:'Fraunces',serif;font-weight:900;font-size:20px;color:var(--g)}
+.drawer-logo em{font-style:normal;color:var(--a)}
+.drawer-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ts);line-height:1;padding:2px 6px}
+.drawer-nav{flex:1;display:flex;flex-direction:column;padding:12px 12px;gap:4px;overflow-y:auto}
+.dtab{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--tx);transition:all .2s;text-align:left;width:100%}
+.dtab:hover{background:var(--gl);color:var(--gm)}
+.dtab.active{background:var(--gl);color:var(--g);font-weight:700}
+.dtab-icon{font-size:20px;flex-shrink:0}
+.drawer-footer{padding:16px 20px;border-top:1px solid var(--cd)}
 
 /* PLAN VIEW */
 .ph{background:linear-gradient(135deg,var(--g) 0%,var(--gm) 100%);border-radius:14px;padding:22px 24px;color:#fff;margin-bottom:18px;position:relative;overflow:hidden}
@@ -165,7 +227,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .pst{background:rgba(255,255,255,.12);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:500}
 .sect{font-family:'Fraunces',serif;font-size:17px;font-weight:800;color:var(--g);margin-bottom:11px;display:flex;align-items:center;gap:7px}
 
-/* DAY CARDS */
+/* DAY CARDS (used in full week list) */
 .dg{display:grid;gap:9px;margin-bottom:22px}
 .dc{background:#fff;border-radius:12px;padding:13px 17px;border:1.5px solid var(--cd);display:flex;gap:13px;align-items:flex-start;transition:all .2s;position:relative}
 .dc:hover{border-color:var(--al);box-shadow:var(--sh)}
@@ -187,6 +249,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .check-btn:hover{border-color:var(--gm);background:var(--gl)}
 .check-btn.checked{border-color:var(--gm);background:var(--gm);color:#fff}
 
+/* DAY CALENDAR */
+.day-cal{display:flex;gap:4px;margin-bottom:16px;background:#fff;border-radius:12px;padding:8px;border:1.5px solid var(--cd)}
+.day-cell{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:9px;cursor:pointer;transition:all .2s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.day-cell:hover:not(.day-selected){background:var(--ap)}
+.day-cell.day-selected{background:var(--a)}
+.day-cell.day-today:not(.day-selected){box-shadow:0 0 0 2px var(--a) inset}
+.day-cell.day-done:not(.day-selected){background:var(--gl)}
+.dc-lbl{font-size:9px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.3px}
+.dc-num{font-size:13px;font-weight:800;font-family:'Fraunces',serif;color:var(--tx)}
+.dc-dot{width:5px;height:5px;border-radius:50%;background:var(--gm);margin-top:1px}
+.day-cell.day-selected .dc-lbl,.day-cell.day-selected .dc-num{color:#fff}
+.day-cell.day-selected .dc-dot{background:rgba(255,255,255,.7)}
+
+/* DAY DETAIL */
+.day-detail{background:#fff;border-radius:14px;border:1.5px solid var(--cd);padding:16px;margin-bottom:16px;cursor:pointer;transition:border-color .2s}
+.day-detail:hover{border-color:var(--al)}
+.day-detail.ddet-done{border-color:var(--gm);background:var(--gl)}
+.ddet-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ddet-num{background:var(--ap);color:var(--a);font-family:'Fraunces',serif;font-weight:900;font-size:15px;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.day-detail.ddet-done .ddet-num{background:var(--gm);color:#fff}
+.ddet-meta{flex:1}
+.ddet-day{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.8px}
+.ddet-dur{font-size:12px;color:var(--a);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px}
+.ddet-activity{font-size:15px;line-height:1.6;color:var(--tx);font-weight:500;padding-bottom:4px}
+.day-detail.ddet-done .ddet-activity{text-decoration:line-through;opacity:.6}
+.ddet-note{font-size:13px;line-height:1.6;color:var(--tm);background:var(--ap);border-radius:10px;padding:12px 14px;margin-top:8px}
+
 /* NUTRITION */
 .nc{background:#fff;border-radius:var(--rad);padding:18px 22px;border:1.5px solid var(--cd);margin-bottom:22px}
 .nr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--cd)}
@@ -198,7 +287,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 /* TIPS */
 .tc{background:var(--ap);border-radius:var(--rad);padding:16px 20px;border:1.5px solid rgba(232,130,12,.2);margin-bottom:22px}
-.ti2{display:flex;gap:9px;margin-bottom:9px;font-size:12px;color:var(--tm);line-height:1.5}
+.ti2{display:flex;gap:9px;margin-bottom:9px;font-size:13px;color:var(--tm);line-height:1.6}
 .ti2:last-child{margin-bottom:0}
 
 /* WEIGHT TRACKER */
@@ -223,13 +312,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 /* WEEKLY PROGRESS DOTS */
 .week-prog{background:#fff;border-radius:var(--rad);border:1.5px solid var(--cd);padding:16px 18px;margin-bottom:16px}
 .wp-title{font-weight:700;font-size:13px;color:var(--tx);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-.wp-days{display:flex;gap:6px;justify-content:space-between}
-.wp-day{flex:1;text-align:center}
-.wp-dot{width:32px;height:32px;border-radius:50%;border:2px solid var(--cd);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:13px;cursor:pointer;transition:all .2s}
-.wp-dot.done{background:var(--gm);border-color:var(--gm);color:#fff}
-.wp-dot.rest{background:var(--gl);border-color:var(--gl);color:var(--gm)}
-.wp-dot.today{border-color:var(--a);box-shadow:0 0 0 3px rgba(232,130,12,.15)}
-.wp-lbl{font-size:10px;color:var(--ts);font-weight:600}
 .wp-score{font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--a)}
 .wp-score-lbl{font-size:11px;color:var(--ts)}
 
@@ -290,13 +372,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .tag{display:inline-flex;align-items:center;gap:4px;background:var(--ap);color:var(--a);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
 .tag.green{background:var(--gl);color:var(--gm)}
 .tag.purple{background:#EDE9FE;color:#7C3AED}
-@media(max-width:480px){.opts.c2{grid-template-columns:1fr}.ph::after{display:none}.rc-stats{grid-template-columns:repeat(2,1fr)}.tabs .tab-label{display:none}}
+
+@media(max-width:900px){
+  .opts.c2{grid-template-columns:1fr}
+  .opts.c3{grid-template-columns:1fr 1fr}
+  .ph::after{display:none}
+  .rc-stats{grid-template-columns:repeat(2,1fr)}
+  .sidebar{display:none}
+  .bbar{display:flex}
+  .dash-main{padding-bottom:90px}
+}
 `;
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function parsePlan(txt) {
   try {
-    const c = txt.replace(/```json|```/g,"").trim();
+    const c = txt.replace(/```[\w]*\n?/g,"").trim();
     const s = c.indexOf("{"), e = c.lastIndexOf("}");
     if (s!==-1&&e!==-1) return JSON.parse(c.slice(s,e+1));
   } catch{}
@@ -379,97 +470,211 @@ function WeightChart({ entries, ideal }) {
   );
 }
 
-// ─── TAB: CETTE SEMAINE ───────────────────────────────────────────────────
-function TabSemaine({ plan, profile, done, onToggle, onHardWeek, notifs, onToggleNotif, currentWeek }) {
-  if (!plan) return null;
+// ─── HOME VIEW (indépendant, affiché par défaut) ──────────────────────────
+function HomeView({ plan, profile, done, currentWeek }) {
   const todayIdx = new Date().getDay();
   const dayIdx = todayIdx === 0 ? 6 : todayIdx - 1;
+
+  if (!plan) return null;
+  const bi = BREEDS[profile.breed]||BREEDS["Autre race"];
+  const ideal = Math.round((bi.ideal[0]+bi.ideal[1])/2);
+  const breedName = profile.breed==="Autre race"?(profile.custom||profile.breed):profile.breed;
+  const isOverweight = profile.weight > ideal + 2;
+  const isUnderweight = profile.weight < ideal - 2;
   const totalDays = plan.weekly_plan?.length || 7;
   const doneCount = Object.values(done).filter(Boolean).length;
+  const todayPlan = plan.weekly_plan?.[dayIdx];
+  const initial = (profile.name||"?")[0].toUpperCase();
+
+  const rawConseils = todayPlan?.breed_note || "";
+  const conseilBullets = rawConseils.length > 0
+    ? rawConseils.split(". ").map(s=>s.trim()).filter(Boolean)
+    : plan?.breed_tips || [];
 
   return (
     <div>
-      {/* Progress */}
-      <div className="week-prog">
-        <div className="wp-title">
-          <span>Semaine {currentWeek} en cours</span>
+      {/* Home header */}
+      <div className="home-header">
+        <div>
+          <div className="home-greeting">Bonjour ! 👋</div>
+          <div className="home-sub">Voici le plan de {profile.name} aujourd'hui</div>
+        </div>
+        <div className="home-avatar">{initial}</div>
+      </div>
+
+      {/* Profile card */}
+      <div className="profile-card">
+        <div className="pc-left">
+          <div className="pc-emoji">🐕</div>
           <div>
-            <span className="wp-score">{doneCount}</span>
-            <span className="wp-score-lbl">/{totalDays} activités</span>
+            <div className="pc-name">{profile.name}</div>
+            <div className="pc-info">{breedName} · {profile.age} ans · {profile.weight} kg</div>
           </div>
         </div>
-        <div className="wp-days">
-          {DAYS_SHORT.map((d,i)=>{
-            const dayPlan = plan.weekly_plan?.[i];
-            const isDone = done[i];
-            const isRest = dayPlan?.is_rest;
-            const isToday = i === dayIdx;
-            return (
-              <div key={i} className="wp-day">
-                <div
-                  className={`wp-dot${isDone?" done":""}${isRest&&!isDone?" rest":""}${isToday?" today":""}`}
-                  onClick={()=>!isRest&&onToggle(i)}
-                  title={dayPlan?.activity||""}
-                >
-                  {isDone ? "✓" : isRest ? "💤" : d}
-                </div>
-                <div className="wp-lbl">{d}</div>
+        <div className={`pc-badge${isOverweight?" warn":isUnderweight?" under":""}`}>
+          {isOverweight ? "Surpoids" : isUnderweight ? "Sous-poids" : "✓ En forme"}
+        </div>
+      </div>
+
+      {/* 3 mini cards */}
+      <div className="mini-cards">
+        <div className="mini-card">
+          <div className="mc-icon">🏃</div>
+          <div className="mc-val">{todayPlan?.duration_min||"—"}{todayPlan?.duration_min&&<span className="mc-unit">min</span>}</div>
+          <div className="mc-lbl">Exercice</div>
+        </div>
+        <div className="mini-card">
+          <div className="mc-icon">🥗</div>
+          <div className="mc-val">{plan?.nutrition?.recommended_ration_g||"—"}{plan?.nutrition?.recommended_ration_g&&<span className="mc-unit">g</span>}</div>
+          <div className="mc-lbl">Ration</div>
+        </div>
+        <div className="mini-card">
+          <div className="mc-icon">💧</div>
+          <div className="mc-val">{plan?.nutrition?.water_ml||"—"}{plan?.nutrition?.water_ml&&<span className="mc-unit">ml</span>}</div>
+          <div className="mc-lbl">Eau</div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="prog-card">
+        <div className="prog-header">
+          <span className="prog-title">Objectif semaine {currentWeek}</span>
+          <span className="prog-count">{doneCount}/7 jours</span>
+        </div>
+        <div className="prog-bar">
+          <div className="prog-fill" style={{width:`${(doneCount/totalDays)*100}%`}}/>
+        </div>
+      </div>
+
+      {/* Conseil du jour — bullet points */}
+      {conseilBullets.length > 0 && (
+        <div className="conseil-card">
+          <div className="cc-title">💡 Conseil du jour</div>
+          <ul className="cc-bullets">
+            {conseilBullets.map((b,i)=>(
+              <li key={i} className="cc-bullet">{b}{!b.endsWith(".")?".":""}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TAB: PROGRAMME ───────────────────────────────────────────────────────
+function TabProgramme({ plan, profile, done, onToggle, onHardWeek }) {
+  const todayIdx = new Date().getDay();
+  const dayIdx = todayIdx === 0 ? 6 : todayIdx - 1;
+  const [selectedDay, setSelectedDay] = useState(dayIdx);
+
+  if (!plan) return null;
+  const day = plan.weekly_plan?.[selectedDay];
+
+  return (
+    <div>
+      <div className="day-cal">
+        {DAYS_SHORT.map((d,i)=>{
+          const isDone = done[i];
+          const isToday = i === dayIdx;
+          const isSelected = i === selectedDay;
+          const isRest = plan.weekly_plan?.[i]?.is_rest;
+          let cls = "day-cell";
+          if (isSelected) cls += " day-selected";
+          else if (isDone) cls += " day-done";
+          else if (isToday) cls += " day-today";
+          return (
+            <button key={i} className={cls} onClick={()=>setSelectedDay(i)}>
+              <span className="dc-lbl">{d}</span>
+              <span className="dc-num">{isRest ? "💤" : i+1}</span>
+              {isDone && <span className="dc-dot"/>}
+            </button>
+          );
+        })}
+      </div>
+
+      {day && (
+        <div
+          className={`day-detail${done[selectedDay]?" ddet-done":""}`}
+          onClick={()=>!day.is_rest&&onToggle(selectedDay)}
+        >
+          <div className="ddet-header">
+            <div className="ddet-num">{done[selectedDay]?"✓":selectedDay+1}</div>
+            <div className="ddet-meta">
+              <div className="ddet-day">
+                {DAYS[selectedDay]}{selectedDay===dayIdx?" — Aujourd'hui":""}{day.is_rest?" — Repos":""}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Hard week mode */}
-      <div className="hw-card">
-        <div className="hw-title">😓 Semaine difficile ?</div>
-        <div className="hw-sub">
-          Tu n'as pas pu sortir cette semaine ? Pas de stress — l'IA va adapter le programme pour toi.
-        </div>
-        <button className="btn hw-btn btn-sm" onClick={onHardWeek}>
-          🔄 Adapter le programme
-        </button>
-      </div>
-
-      {/* Today's activity */}
-      <div className="sect">📅 Programme du jour</div>
-      {plan.weekly_plan?.[dayIdx] && (
-        <div className={`dc${plan.weekly_plan[dayIdx].is_rest?" rest":""}${done[dayIdx]?" done":""}`}
-          style={{marginBottom:16,cursor:"pointer"}} onClick={()=>!plan.weekly_plan[dayIdx].is_rest&&onToggle(dayIdx)}>
-          <div className="dn">{dayIdx+1}</div>
-          <div className="dct">
-            <div className="dnm">{DAYS[dayIdx]} — Aujourd'hui</div>
-            <div className="da">{plan.weekly_plan[dayIdx].activity}</div>
-            <div style={{display:"flex",alignItems:"center",marginTop:3}}>
-              <span className="dd">{plan.weekly_plan[dayIdx].duration_min} min</span>
-              {!plan.weekly_plan[dayIdx].is_rest && <IDots n={plan.weekly_plan[dayIdx].intensity}/>}
+              <div className="ddet-dur">
+                {day.duration_min} min{!day.is_rest&&<IDots n={day.intensity}/>}
+              </div>
             </div>
-            {plan.weekly_plan[dayIdx].breed_note && <div className="dnote">💡 {plan.weekly_plan[dayIdx].breed_note}</div>}
+            {!day.is_rest&&(
+              <button
+                className={`check-btn${done[selectedDay]?" checked":""}`}
+                onClick={e=>{e.stopPropagation();onToggle(selectedDay)}}
+              >
+                {done[selectedDay]?"✓":""}
+              </button>
+            )}
           </div>
-          <button className={`check-btn${done[dayIdx]?" checked":""}`} onClick={e=>{e.stopPropagation();!plan.weekly_plan[dayIdx].is_rest&&onToggle(dayIdx)}}>
-            {done[dayIdx]?"✓":""}
-          </button>
+          <div className="ddet-activity">{day.activity}</div>
+          {day.breed_note&&<div className="ddet-note">💡 {day.breed_note}</div>}
         </div>
       )}
 
-      {/* Notifications */}
-      <div className="sect">🔔 Rappels</div>
-      <div className="notif-card">
-        {[
-          {key:"morning", label:`Rappel matin pour ${profile.name}`, sub:"7h30 — Heure de la balade du matin 🐾"},
-          {key:"evening", label:"Rappel soir", sub:"18h30 — Balade du soir"},
-          {key:"weekly", label:"Bilan hebdomadaire", sub:"Dimanche 20h — Résumé de la semaine"},
-          {key:"weight", label:"Pesée hebdomadaire", sub:"Lundi matin — Pense à peser "+profile.name},
-        ].map(n=>(
-          <div key={n.key} className="notif-row">
-            <div>
-              <div className="notif-lbl">{n.label}</div>
-              <div className="notif-sub">{n.sub}</div>
+      <div className="hw-card">
+        <div className="hw-title">😓 Semaine difficile ?</div>
+        <div className="hw-sub">Tu n'as pas pu sortir cette semaine ? L'IA va adapter le programme.</div>
+        <button className="btn hw-btn btn-sm" onClick={onHardWeek}>🔄 Adapter</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: NUTRITION ───────────────────────────────────────────────────────
+function TabNutrition({ plan }) {
+  if (!plan) return null;
+  const n = plan.nutrition;
+  return (
+    <div>
+      <div className="sect">🍗 Plan nutritionnel</div>
+      <div className="nc">
+        <div className="nr"><div className="nk">🔥 Calories/jour</div><div className="nv hl">{n?.daily_calories} kcal</div></div>
+        <div className="nr"><div className="nk">🥣 Ration recommandée</div><div className="nv gr">{n?.recommended_ration_g} g/j</div></div>
+        {n?.reduction_pct!==0&&n?.reduction_pct!=null&&(
+          <div className="nr">
+            <div className="nk">{n.reduction_pct<0?"📈 Augmentation vs ration actuelle":"📉 Réduction"}</div>
+            <div className="nv" style={{color:n.reduction_pct<0?"var(--gm)":"var(--a)"}}>
+              {n.reduction_pct<0?`+${Math.abs(n.reduction_pct)}%`:`-${n.reduction_pct}%`}
             </div>
-            <Toggle on={notifs[n.key]} onChange={v=>onToggleNotif(n.key,v)}/>
           </div>
+        )}
+        <div className="nr"><div className="nk">🦴 Treats max/jour</div><div className="nv">{n?.treats_max_per_day}</div></div>
+        <div className="nr"><div className="nk">💧 Eau recommandée</div><div className="nv">{n?.water_ml} ml</div></div>
+      </div>
+      {n?.note&&(
+        <div className="an">💡 <span>{n.note}</span></div>
+      )}
+    </div>
+  );
+}
+
+// ─── TAB: CONSEILS ────────────────────────────────────────────────────────
+function TabConseils({ plan, profile }) {
+  const breedName = profile.breed==="Autre race"?(profile.custom||profile.breed):profile.breed;
+  if (!plan?.breed_tips?.length) return (
+    <div style={{textAlign:"center",padding:"40px 22px",fontSize:13,color:"var(--ts)"}}>
+      Génère un programme pour voir les conseils 🧬
+    </div>
+  );
+  return (
+    <div>
+      <div className="sect">🧬 Conseils — {breedName}</div>
+      <div className="tc">
+        {plan.breed_tips.map((t,i)=>(
+          <div key={i} className="ti2"><span>🐾</span><span>{t}</span></div>
         ))}
       </div>
+      <div className="an">🏥 <span>Ces conseils sont générés par IA. Consulte toujours un vétérinaire pour un suivi médical personnalisé.</span></div>
     </div>
   );
 }
@@ -499,7 +704,6 @@ function TabSuivi({ profile, weights, onAddWeight, photos, onPhoto }) {
 
   return (
     <div>
-      {/* Weight tracker */}
       <div className="sect">⚖️ Suivi du poids</div>
       <div className="wt-card">
         <div className="wt-head">
@@ -542,7 +746,6 @@ function TabSuivi({ profile, weights, onAddWeight, photos, onPhoto }) {
         </div>
       </div>
 
-      {/* Before/After photos */}
       <div className="sect">📸 Photos avant / après</div>
       <div className="photo-section">
         <div style={{fontSize:12,color:"var(--ts)",marginBottom:4}}>
@@ -558,9 +761,7 @@ function TabSuivi({ profile, weights, onAddWeight, photos, onPhoto }) {
                 {photos[type] ? (
                   <>
                     <img src={photos[type]} alt={type}/>
-                    <div className="photo-slot-overlay" style={{color:"#fff",fontSize:12,fontWeight:600}}>
-                      Changer
-                    </div>
+                    <div className="photo-slot-overlay" style={{color:"#fff",fontSize:12,fontWeight:600}}>Changer</div>
                   </>
                 ) : (
                   <>
@@ -602,7 +803,6 @@ function TabBilan({ profile, plan, recaps, onGenerateBilan, doneHistory, weights
       <div className="sect">📊 Bilan hebdomadaire</div>
       <div className="an">🤖 <span>L'IA analyse ta semaine et génère des recommandations personnalisées.</span></div>
 
-      {/* Current week recap */}
       {Array.from({length: currentWeek}, (_,i)=>i+1).reverse().map(w=>{
         const recap = recaps[w];
         const weekDone = doneHistory[w] || {};
@@ -651,7 +851,6 @@ function TabBilan({ profile, plan, recaps, onGenerateBilan, doneHistory, weights
         );
       })}
 
-      {/* New week button */}
       <button className="btn btn-g" style={{width:"100%",justifyContent:"center",marginTop:8}}
         onClick={()=>onGenerateBilan("new")}>
         🚀 Démarrer la semaine {currentWeek+1}
@@ -669,7 +868,7 @@ function TabVeto({ profile, plan, weights }) {
   const breedName = profile.breed==="Autre race"?(profile.custom||"race inconnue"):profile.breed;
 
   const vetReport = `
-RAPPORT BIEN-ÊTRE CANIN — LetsGoBoy
+RAPPORT BIEN-ÊTRE CANIN — Canymo
 Date : ${today()}
 
 ═══════════════════════════════
@@ -701,8 +900,7 @@ CONSEILS SPÉCIFIQUES À LA RACE
 ═══════════════════════════════
 ${plan?.breed_tips?.join("\n• ")||"—"}
 
-Généré par LetsGoBoy — Programme bien-être IA pour chiens
-letsgoboy.com
+Généré par Canymo — Programme bien-être IA pour chiens
 `.trim();
 
   const handleCopy = () => {
@@ -725,9 +923,7 @@ letsgoboy.com
       <div className="an">📋 <span>Un rapport complet du programme de <strong>{profile.name}</strong> à partager avec votre vétérinaire.</span></div>
 
       <div className="vet-card">
-        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>
-          Rapport généré automatiquement
-        </div>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:4}}>Rapport généré automatiquement</div>
         <div style={{fontSize:12,color:"var(--ts)",marginBottom:8}}>
           Inclut le programme d'exercice, le plan nutritionnel, le suivi du poids et les conseils de race.
         </div>
@@ -743,9 +939,7 @@ letsgoboy.com
       </div>
 
       <div className="vet-card">
-        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:8}}>
-          📧 Envoyer par email
-        </div>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:8}}>📧 Envoyer par email</div>
         <div className="wt-add">
           <input className="wt-inp" type="email" placeholder="email@veterinaire.fr"/>
           <button className="btn btn-g btn-sm">Envoyer</button>
@@ -866,14 +1060,15 @@ Réponds UNIQUEMENT en JSON valide :
       const res=await fetch("/api/chat",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:3000,messages:[{role:"user",content:prompt}]})
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:5000,messages:[{role:"user",content:prompt}]})
       });
       clearInterval(t);
       if(!res.ok) throw new Error("Erreur API "+res.status);
       const data=await res.json();
       const txt=data.content?.map(b=>b.text||"").join("")||"";
+      console.log("[chat] réponse brute Claude :", txt);
       const plan=parsePlan(txt);
-      if(!plan) throw new Error("Format invalide");
+      if(!plan) throw new Error("Format invalide — voir console pour la réponse brute");
       onComplete(d, plan);
     } catch(e) {
       clearInterval(t); setLoading(false);
@@ -1110,27 +1305,25 @@ Réponds UNIQUEMENT en JSON valide :
 
 // ─── DASHBOARD ─────────────────────────────────────────────────────────────
 function Dashboard({ profile, plan, onReset }) {
-  const [tab, setTab] = useState("semaine");
+  const [tab, setTab] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [done, setDone] = useState({});
   const [weights, setWeights] = useState([{date: today(), weight: profile.weight}]);
   const [photos, setPhotos] = useState({});
   const [notifs, setNotifs] = useState({morning:false,evening:false,weekly:false,weight:false});
   const [recaps, setRecaps] = useState({});
   const [doneHistory, setDoneHistory] = useState({});
-  const [hardWeekLoading, setHardWeekLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState(plan);
 
   const bi = BREEDS[profile.breed]||BREEDS["Autre race"];
-  const ideal = Math.round((bi.ideal[0]+bi.ideal[1])/2);
   const breedName = profile.breed==="Autre race"?(profile.custom||profile.breed):profile.breed;
   const currentWeek = profile.currentWeek || 1;
   const doneCount = Object.values(done).filter(Boolean).length;
 
-  // Load persisted data
   useEffect(()=>{
     Promise.all([
-      load("lgb_done"),load("lgb_weights"),load("lgb_photos"),
-      load("lgb_notifs"),load("lgb_recaps"),load("lgb_doneHistory")
+      load("cny_done"),load("cny_weights"),load("cny_photos"),
+      load("cny_notifs"),load("cny_recaps"),load("cny_doneHistory")
     ]).then(([d,w,p,n,r,dh])=>{
       if(d) setDone(d);
       if(w) setWeights(w);
@@ -1144,69 +1337,68 @@ function Dashboard({ profile, plan, onReset }) {
   const toggleDone = useCallback(async (i)=>{
     const next = {...done,[i]:!done[i]};
     setDone(next);
-    await save("lgb_done",next);
+    await save("cny_done",next);
   },[done]);
 
   const addWeight = useCallback(async (entry)=>{
     const next=[...weights,entry];
     setWeights(next);
-    await save("lgb_weights",next);
+    await save("cny_weights",next);
   },[weights]);
 
   const handlePhoto = useCallback(async (type,data)=>{
     const next={...photos,[type]:data};
     setPhotos(next);
-    await save("lgb_photos",next);
+    await save("cny_photos",next);
   },[photos]);
 
   const toggleNotif = useCallback(async (key,val)=>{
     if(val && "Notification" in window) {
       Notification.requestPermission().then(p=>{
-        if(p==="granted") { new Notification(`LetsGoBoy — ${profile.name}`,{body:"Les rappels sont activés 🐾",icon:"🐕"}); }
+        if(p==="granted") { new Notification(`Canymo — ${profile.name}`,{body:"Les rappels sont activés 🐾",icon:"🐕"}); }
       });
     }
     const next={...notifs,[key]:val};
     setNotifs(next);
-    await save("lgb_notifs",next);
+    await save("cny_notifs",next);
   },[notifs,profile.name]);
 
   const generateBilan = useCallback(async (weekNum)=>{
     if(weekNum==="new") {
-      // Save current week done to history
       const newHistory={...doneHistory,[currentWeek]:done};
       setDoneHistory(newHistory);
       setDone({});
-      await save("lgb_done",{});
-      await save("lgb_doneHistory",newHistory);
-      // Update profile week... simplified here
+      await save("cny_done",{});
+      await save("cny_doneHistory",newHistory);
       return;
     }
     const weekDone=doneHistory[weekNum]||done;
-    const doneCount=Object.values(weekDone).filter(Boolean).length;
+    const wDoneCount=Object.values(weekDone).filter(Boolean).length;
     const lastW=weights[weights.length-1];
+    const bi2 = BREEDS[profile.breed]||BREEDS["Autre race"];
+    const ideal2 = Math.round((bi2.ideal[0]+bi2.ideal[1])/2);
     const prompt=`Tu es un coach vétérinaire bienveillant. Génère un bilan de semaine pour ce chien.
 
 Chien : ${profile.name} (${breedName}, ${profile.age} ans)
-Semaine ${weekNum} — Activités réalisées : ${doneCount}/7
-Dernier poids : ${lastW?.weight||profile.weight} kg (objectif : ${ideal} kg)
+Semaine ${weekNum} — Activités réalisées : ${wDoneCount}/7
+Dernier poids : ${lastW?.weight||profile.weight} kg (objectif : ${ideal2} kg)
 Objectifs : ${(profile.goals||[]).join(", ")}
 
 Écris un bilan encourageant de 3-4 phrases en français. Sois précis, positif et donne 1 conseil concret pour la semaine suivante. Maximum 80 mots.`;
 
     const res=await fetch("/api/chat",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:prompt}]})
     });
     if(!res.ok) return;
     const data=await res.json();
     const txt=data.content?.map(b=>b.text||"").join("")||"";
     const next={...recaps,[weekNum]:txt};
     setRecaps(next);
-    await save("lgb_recaps",next);
-  },[doneHistory,done,weights,profile,breedName,ideal,recaps,currentWeek]);
+    await save("cny_recaps",next);
+  },[doneHistory,done,weights,profile,breedName,recaps,currentWeek]);
 
   const handleHardWeek = async ()=>{
-    setHardWeekLoading(true);
     const prompt=`Tu es un coach vétérinaire compréhensif. Cette semaine a été difficile pour ${profile.name} (${breedName}, ${profile.age} ans).
 Le propriétaire n'a pu faire que ${doneCount}/7 activités.
 Génère un programme adapté de 7 jours plus léger et progressif.
@@ -1218,7 +1410,7 @@ Réponds UNIQUEMENT en JSON :
     try {
       const res=await fetch("/api/chat",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,messages:[{role:"user",content:prompt}]})
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:800,messages:[{role:"user",content:prompt}]})
       });
       if(res.ok){
         const data=await res.json();
@@ -1226,120 +1418,83 @@ Réponds UNIQUEMENT en JSON :
         const newPlan=parsePlan(txt);
         if(newPlan){setCurrentPlan(newPlan);setDone({});}
       }
-    } finally { setHardWeekLoading(false); }
+    } catch {}
   };
 
   const tabs=[
-    {k:"semaine",icon:"📅",label:"Semaine"},
+    {k:null,icon:"🏠",label:"Accueil"},
     {k:"programme",icon:"🏃",label:"Programme"},
+    {k:"nutrition",icon:"🍗",label:"Nutrition"},
+    {k:"conseils",icon:"🧬",label:"Conseil"},
     {k:"suivi",icon:"📊",label:"Suivi"},
     {k:"bilan",icon:"🏆",label:"Bilan"},
     {k:"veto",icon:"🏥",label:"Véto"},
   ];
 
+  const openDrawer  = () => setDrawerOpen(true);
+  const closeDrawer = () => setDrawerOpen(false);
+  const selectTab   = (k) => { setTab(tab===k?null:k); closeDrawer(); };
+
   return (
     <div className="dash">
-      <div className="dhead">
-        <div className="dhead-top">
-          <div className="dog-info">
-            <h2>Bonjour, {profile.name} 🐾</h2>
-            <p>{breedName} · {profile.age} ans · {profile.city}</p>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
-              <span className="week-badge">Semaine {currentWeek}</span>
-              <span style={{fontSize:12,opacity:.8}}>{doneCount}/7 activités ✓</span>
-            </div>
-          </div>
-          <div className="dog-avatar">🐕</div>
+      {/* Fixed header */}
+      <header className="dash-header">
+        <button className="dash-hamburger" onClick={openDrawer} aria-label="Menu">
+          <span/><span/><span/>
+        </button>
+        <div className="dash-logo">Can<em>ymo</em></div>
+      </header>
+
+      {/* Drawer overlay */}
+      <div className={`drawer-overlay${drawerOpen?" open":""}`} onClick={closeDrawer}/>
+
+      {/* Drawer */}
+      <nav className={`drawer${drawerOpen?" open":""}`}>
+        <div className="drawer-head">
+          <div className="drawer-logo">Can<em>ymo</em></div>
+          <button className="drawer-close" onClick={closeDrawer}>✕</button>
         </div>
-        <div className="tabs">
+        <div className="drawer-nav">
           {tabs.map(t=>(
-            <button key={t.k} className={`tab${tab===t.k?" active":""}`} onClick={()=>setTab(t.k)}>
-              <span className="tab-icon">{t.icon}</span>
-              <span className="tab-label">{t.label}</span>
+            <button key={t.k} className={`dtab${tab===t.k?" active":""}`} onClick={()=>selectTab(t.k)}>
+              <span className="dtab-icon">{t.icon}</span>
+              {t.label}
             </button>
           ))}
         </div>
-      </div>
+        <div className="drawer-footer">
+          <button className="rb" onClick={onReset}>← Autre chien</button>
+        </div>
+      </nav>
 
-      <div className="dcontent">
-        {tab==="semaine"&&(
-          <TabSemaine plan={currentPlan} profile={profile} done={done}
-            onToggle={toggleDone} onHardWeek={handleHardWeek}
-            notifs={notifs} onToggleNotif={toggleNotif} currentWeek={currentWeek}/>
-        )}
-
-        {tab==="programme"&&(
-          <div>
-            <div className="ph">
-              <div className="pbadge">Programme Semaine {currentWeek}</div>
-              <div className="pname">Plan de {profile.name}</div>
-              <div className="psub">{currentPlan?.weekly_goal}</div>
-              <div className="pstats">
-                <div className="pst">⚖️ {profile.weight}kg → {ideal}kg</div>
-                <div className="pst">🎯 {(profile.goals||[]).join(" + ")}</div>
-                <div className="pst">📅 ~{currentPlan?.estimated_weeks}sem</div>
-              </div>
-            </div>
-
-            <div className="sect">🏃 Les 7 jours</div>
-            <div className="dg">
-              {currentPlan?.weekly_plan?.map((day,i)=>(
-                <div key={i} className={`dc${day.is_rest?" rest":""}${done[i]?" done":""}`}>
-                  <div className="dn">{done[i]?"✓":i+1}</div>
-                  <div className="dct">
-                    <div className="dnm">{DAYS[i]}</div>
-                    <div className="da">{day.activity}</div>
-                    <div style={{display:"flex",alignItems:"center",marginTop:3}}>
-                      <span className="dd">{day.duration_min} min</span>
-                      {!day.is_rest&&<IDots n={day.intensity}/>}
-                    </div>
-                    {day.breed_note&&<div className="dnote">💡 {day.breed_note}</div>}
-                  </div>
-                  {!day.is_rest&&(
-                    <button className={`check-btn${done[i]?" checked":""}`} onClick={()=>toggleDone(i)}>
-                      {done[i]?"✓":""}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="sect">🍗 Plan nutritionnel</div>
-            <div className="nc">
-              <div className="nr"><div className="nk">🔥 Calories/jour</div><div className="nv hl">{currentPlan?.nutrition?.daily_calories} kcal</div></div>
-              <div className="nr"><div className="nk">🥣 Ration recommandée</div><div className="nv gr">{currentPlan?.nutrition?.recommended_ration_g} g/j</div></div>
-              {currentPlan?.nutrition?.reduction_pct!==0&&currentPlan?.nutrition?.reduction_pct!=null&&<div className="nr"><div className="nk">{currentPlan.nutrition.reduction_pct<0?"📈 Augmentation vs ration actuelle":"📉 Réduction"}</div><div className="nv" style={{color:currentPlan.nutrition.reduction_pct<0?"var(--g, #22c55e)":"var(--a)"}}>{currentPlan.nutrition.reduction_pct<0?`+${Math.abs(currentPlan.nutrition.reduction_pct)}%`:`-${currentPlan.nutrition.reduction_pct}%`}</div></div>}
-              <div className="nr"><div className="nk">🦴 Treats max/jour</div><div className="nv">{currentPlan?.nutrition?.treats_max_per_day}</div></div>
-              <div className="nr"><div className="nk">💧 Eau recommandée</div><div className="nv">{currentPlan?.nutrition?.water_ml} ml</div></div>
-              {currentPlan?.nutrition?.note&&<div style={{marginTop:10,padding:"9px 12px",background:"var(--ap)",borderRadius:8,fontSize:11,color:"var(--tm)",fontStyle:"italic"}}>💡 {currentPlan.nutrition.note}</div>}
-            </div>
-
-            {currentPlan?.breed_tips?.length>0&&(
-              <>
-                <div className="sect">🧬 Conseils — {breedName}</div>
-                <div className="tc">{currentPlan.breed_tips.map((t,i)=><div key={i} className="ti2"><span>🐾</span><span>{t}</span></div>)}</div>
-              </>
-            )}
-          </div>
-        )}
-
-        {tab==="suivi"&&(
-          <TabSuivi profile={profile} weights={weights} onAddWeight={addWeight}
-            photos={photos} onPhoto={handlePhoto}/>
-        )}
-
-        {tab==="bilan"&&(
-          <TabBilan profile={{...profile,currentWeek}} plan={currentPlan}
-            recaps={recaps} onGenerateBilan={generateBilan}
-            doneHistory={doneHistory} weights={weights}/>
-        )}
-
-        {tab==="veto"&&(
-          <TabVeto profile={profile} plan={currentPlan} weights={weights}/>
-        )}
-
-        <div style={{marginTop:24}}>
-          <button className="rb" onClick={onReset}>← Créer un programme pour un autre chien</button>
+      {/* Content */}
+      <div className="dash-layout">
+        <div className="dash-main">
+          {tab===null&&(
+            <HomeView plan={currentPlan} profile={profile} done={done} currentWeek={currentWeek}/>
+          )}
+          {tab==="programme"&&(
+            <TabProgramme plan={currentPlan} profile={profile} done={done}
+              onToggle={toggleDone} onHardWeek={handleHardWeek}/>
+          )}
+          {tab==="nutrition"&&(
+            <TabNutrition plan={currentPlan}/>
+          )}
+          {tab==="conseils"&&(
+            <TabConseils plan={currentPlan} profile={profile}/>
+          )}
+          {tab==="suivi"&&(
+            <TabSuivi profile={profile} weights={weights} onAddWeight={addWeight}
+              photos={photos} onPhoto={handlePhoto}/>
+          )}
+          {tab==="bilan"&&(
+            <TabBilan profile={{...profile,currentWeek}} plan={currentPlan}
+              recaps={recaps} onGenerateBilan={generateBilan}
+              doneHistory={doneHistory} weights={weights}/>
+          )}
+          {tab==="veto"&&(
+            <TabVeto profile={profile} plan={currentPlan} weights={weights}/>
+          )}
         </div>
       </div>
     </div>
@@ -1371,9 +1526,8 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [plan, setPlan] = useState(null);
 
-  // Try to restore session
   useEffect(()=>{
-    Promise.all([load("lgb_profile"),load("lgb_plan")]).then(([p,pl])=>{
+    Promise.all([load("cny_profile"),load("cny_plan")]).then(([p,pl])=>{
       if(p&&pl){setProfile(p);setPlan(pl);setScr("dashboard");}
     });
   },[]);
@@ -1381,13 +1535,13 @@ export default function App() {
   const handleComplete = async (profileData, planData) => {
     const p={...profileData,currentWeek:1};
     setProfile(p); setPlan(planData); setScr("dashboard");
-    await save("lgb_profile",p);
-    await save("lgb_plan",planData);
+    await save("cny_profile",p);
+    await save("cny_plan",planData);
   };
 
   const handleReset = async () => {
     setScr("hero"); setProfile(null); setPlan(null);
-    try{await window.storage.delete("lgb_profile");await window.storage.delete("lgb_plan");}catch{}
+    try{await window.storage.delete("cny_profile");await window.storage.delete("cny_plan");}catch{}
   };
 
   return (
@@ -1395,7 +1549,7 @@ export default function App() {
       <style>{CSS}</style>
       <div className="app">
         <nav className="nav">
-          <div className="logo">Let's<span>Go</span>Boy</div>
+          <div className="logo">Can<span>ymo</span></div>
           <div className="badge">BETA</div>
         </nav>
         {scr==="hero"&&<Hero onStart={()=>setScr("onboarding")}/>}
