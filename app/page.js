@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from '../lib/supabase';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const BREEDS = {
@@ -33,6 +34,15 @@ const GOALS=[
 ];
 const DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const DAYS_SHORT=["L","M","M","J","V","S","D"];
+
+// ─── ADMIN WHITELIST ────────────────────────────────────────────────────────
+const ADMIN_EMAILS = [
+  'zieed.fekih@gmail.com',
+];
+const checkIsPro = (userEmail, subscription) => {
+  if (userEmail && ADMIN_EMAILS.includes(userEmail)) return true;
+  return !!(subscription && subscription.status === 'active' && subscription.plan === 'pro');
+};
 
 // ─── STYLES ─────────────────────────────────────────────────────────────────
 const CSS = `
@@ -79,9 +89,11 @@ h1 em{font-style:italic;color:var(--a)}
 /* ONBOARDING */
 .ob{max-width:500px;margin:0 auto;padding:26px 22px 60px;animation:fu .3s ease}
 @keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.pbar{width:100%;height:4px;background:var(--cd);border-radius:10px;margin-bottom:32px;overflow:hidden}
-.pfill{height:100%;background:linear-gradient(90deg,var(--a),var(--al));border-radius:10px;transition:width .4s}
-.slbl{font-size:11px;font-weight:600;color:var(--a);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.pbar{width:100%;height:6px;background:#E5E7EB;border-radius:10px;margin-top:8px;margin-bottom:28px;overflow:hidden}
+.pfill{height:100%;background:#2D6444;border-radius:10px;transition:width .3s ease}
+.ob-prog{margin-bottom:4px}
+.ob-prog-lbl{font-size:11px;color:#6B7280;text-align:center;margin-bottom:6px}
+.slbl{display:none}
 .stitle{font-family:'Fraunces',serif;font-size:clamp(20px,4vw,26px);font-weight:700;color:var(--g);margin-bottom:5px;letter-spacing:-.3px}
 .ssub{font-size:13px;color:var(--ts);margin-bottom:22px;line-height:1.5}
 .flbl{display:block;font-size:11px;font-weight:600;color:var(--tm);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
@@ -115,7 +127,7 @@ h1 em{font-style:italic;color:var(--a)}
 .tip:hover .tb{opacity:1}
 .wi{background:var(--gl);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--gm);font-weight:500;margin-top:9px}
 .mh{font-size:12px;color:var(--gm);background:var(--gl);padding:8px 13px;border-radius:8px;margin-bottom:11px;font-weight:500}
-.an{background:var(--gl);border-radius:10px;padding:11px 15px;font-size:12px;color:var(--gm);display:flex;align-items:flex-start;gap:7px;margin-bottom:15px;font-weight:500;line-height:1.5}
+.an{background:var(--gl);border-radius:12px;padding:16px 18px;font-size:14px;color:var(--gm);display:flex;align-items:flex-start;gap:9px;margin-bottom:20px;font-weight:500;line-height:1.8}
 .rrow{display:flex;justify-content:space-between;margin-bottom:5px}
 .rval{font-family:'Fraunces',serif;font-size:17px;font-weight:800;color:var(--a)}
 .rsmall{font-size:11px;color:var(--ts);display:flex;justify-content:space-between;margin-top:2px}
@@ -125,16 +137,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .snav .btn{flex:1;justify-content:center}
 .chk{position:absolute;top:8px;right:8px;background:var(--gm);color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
 .err{background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:10px;padding:11px 15px;font-size:12px;color:#DC2626;line-height:1.5;margin-top:11px}
+.warn-box{background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:14px 16px;font-size:12px;color:#92400E;line-height:1.6;display:flex;align-items:flex-start;gap:9px;margin-top:16px}
+/* AUTH STEP */
+.auth-tabs{display:flex;background:#F3F4F6;border-radius:10px;padding:3px;margin-bottom:20px;gap:3px}
+.auth-tab{flex:1;padding:9px;border:none;border-radius:8px;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#6B7280;cursor:pointer;transition:all .2s}
+.auth-tab.active{background:#fff;color:#1C3D2A;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.auth-success{background:#D1FAE5;border-radius:8px;padding:16px;color:#065F46;font-size:13px;line-height:1.7;margin-bottom:16px}
+.auth-reset-ok{background:#DBEAFE;border-radius:8px;padding:12px 16px;color:#1E40AF;font-size:12px;line-height:1.6;margin-bottom:12px}
+.link-btn{background:none;border:none;color:#2D6444;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;padding:0}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1.5px solid #E5E7EB;border-radius:8px;padding:11px 16px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#1A1209;cursor:pointer;transition:box-shadow .2s;margin-bottom:16px}
+.google-btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.google-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-sep{display:flex;align-items:center;gap:10px;margin-bottom:16px;color:#9CA3AF;font-size:12px}
+.auth-sep::before,.auth-sep::after{content:"";flex:1;height:1px;background:#E5E7EB}
+.goal-warn{background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:8px;padding:12px 14px;font-size:12px;color:#92400E;line-height:1.6;margin-bottom:12px}
+.warn-box-icon{font-size:15px;flex-shrink:0;margin-top:1px}
 
 /* LOADING */
-.ld{max-width:400px;margin:0 auto;padding:56px 22px;text-align:center;animation:fu .4s ease}
-.ldog{font-size:54px;animation:bou 1s ease infinite;display:block;margin-bottom:18px}
-@keyframes bou{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-.lt{font-family:'Fraunces',serif;font-size:21px;font-weight:800;color:var(--g);margin-bottom:7px}
-.ls{font-size:13px;color:var(--ts);line-height:1.6}
-.dots{display:flex;justify-content:center;gap:6px;margin-top:20px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--a);animation:pu 1.2s ease infinite}
-.dot:nth-child(2){animation-delay:.2s}
+.ld{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#FFFAF4;padding:40px 28px;text-align:center;animation:fu .4s ease}
+.ld-spinner{width:64px;height:64px;border:5px solid #E8F2EC;border-top-color:#1C3D2A;border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-family:'Fraunces',serif;font-size:20px;font-weight:800;color:#1C3D2A;margin-bottom:10px;line-height:1.3}
+.ls{font-size:13px;color:#4A3728;line-height:1.6;min-height:20px;transition:opacity .3s}
+.ld-countdown{margin-top:22px;font-size:12px;font-weight:600;color:#2D6444;background:#E8F2EC;padding:7px 18px;border-radius:20px;display:inline-block}
 .dot:nth-child(3){animation-delay:.4s}
 @keyframes pu{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
 
@@ -190,7 +215,70 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 /* LAYOUT */
 .dash{padding-top:52px}
 .dash-layout{display:flex;flex:1;overflow:hidden}
-.dash-main{flex:1;overflow-y:auto;padding:18px 22px 24px}
+.dash-main{flex:1;overflow-y:auto;padding:18px 22px 86px}
+
+/* ADD DOG BANNER */
+.add-dog-banner{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #E5E7EB;padding:14px 22px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#2D6444;box-shadow:0 -2px 10px rgba(0,0,0,.06);transition:background .2s;z-index:100}
+.add-dog-banner:hover{background:#F0FDF4}
+
+/* PAYWALL */
+.paywall-wrap{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+.paywall-blur{position:fixed;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(0,0,0,.45)}
+.paywall-card{position:relative;z-index:1;background:#FFFAF4;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);text-align:center}
+.paywall-icon{font-size:36px;margin-bottom:12px}
+.paywall-title{font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:#1C3D2A;margin-bottom:8px}
+.paywall-sub{font-size:14px;color:#4A3728;margin-bottom:20px;line-height:1.5}
+.paywall-list{text-align:left;background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
+.paywall-list li{list-style:none;font-size:14px;color:#1A1209;line-height:1.4}
+.paywall-cta{width:100%;background:#2D6444;color:#fff;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;transition:background .2s}
+.paywall-cta:hover{background:#1C3D2A}
+.paywall-hint{font-size:12px;color:#6B7280;margin-bottom:16px}
+.paywall-skip{background:none;border:none;color:#9A8070;font-size:13px;cursor:pointer;text-decoration:underline;padding:4px}
+.paywall-skip:hover{color:#4A3728}
+.pro-badge{display:inline-block;background:#2D6444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;letter-spacing:.5px}
+
+/* DOG SELECT SCREEN */
+.dog-select{max-width:480px;margin:0 auto;padding:40px 22px 32px}
+.dog-select-title{font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:var(--g);margin-bottom:6px;text-align:center}
+.dog-select-sub{font-size:13px;color:var(--ts);text-align:center;margin-bottom:28px}
+.dog-list{display:flex;flex-direction:column;gap:12px;margin-bottom:8px}
+.dog-card{background:#fff;border:1.5px solid var(--cd);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(26,18,9,.06)}
+.dog-card:hover{border-color:#2D6444;box-shadow:0 4px 12px rgba(45,100,68,.12)}
+.dog-card-avatar{width:44px;height:44px;border-radius:50%;background:var(--g);color:#fff;font-family:'Fraunces',serif;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dog-card-info{flex:1}
+.dog-card-name{font-weight:700;font-size:15px;color:var(--tx);margin-bottom:2px}
+.dog-card-meta{font-size:12px;color:var(--ts)}
+.dog-card-goal{display:inline-block;margin-top:5px;background:var(--gl);color:var(--gm);font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px}
+.dog-card-arrow{font-size:20px;color:var(--ts)}
+
+/* ACCOUNT SCREEN */
+.acct{max-width:480px;margin:0 auto;padding:24px 22px 40px}
+.acct-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.acct-back{background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx);padding:0;line-height:1}
+.acct-title{font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--g)}
+.acct-section{margin-bottom:28px}
+.acct-section-title{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.acct-avatar{width:60px;height:60px;border-radius:50%;background:#2D6444;color:#fff;font-family:'Fraunces',serif;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.acct-card{background:#fff;border:1.5px solid var(--cd);border-radius:14px;overflow:hidden}
+.acct-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--cd)}
+.acct-row:last-child{border-bottom:none}
+.acct-row-label{font-size:13px;color:var(--ts);font-weight:500}
+.acct-row-val{font-size:13px;color:var(--tx);font-weight:600}
+.acct-row-val.muted{color:var(--ts)}
+.acct-inp{width:100%;border:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--tx);font-weight:600;background:transparent;outline:none;text-align:right}
+.acct-inp::placeholder{color:var(--ts)}
+.acct-btn-signout{width:100%;padding:12px;border:1.5px solid #DC2626;border-radius:10px;background:transparent;color:#DC2626;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.acct-btn-signout:hover{background:#FEF2F2}
+.acct-delete{text-align:center;margin-top:24px}
+.acct-delete-link{background:none;border:none;font-size:12px;color:var(--ts);cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif}
+.acct-delete-confirm{background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:10px;padding:14px;font-size:12px;color:#DC2626;line-height:1.6;margin-top:12px}
+.dash-avatar{width:30px;height:30px;border-radius:50%;background:#2D6444;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.drawer-account{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--cd);margin-top:8px;cursor:pointer;border-radius:10px;transition:background .2s}
+.drawer-account:hover{background:var(--gl)}
+.drawer-account-avatar{width:34px;height:34px;border-radius:50%;background:#2D6444;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.drawer-account-info{flex:1;min-width:0}
+.drawer-account-name{font-size:13px;font-weight:700;color:var(--tx)}
+.drawer-account-email{font-size:11px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* DASHBOARD HEADER */
 .dash-header{position:fixed;top:0;left:0;right:0;height:52px;background:#fff;border-bottom:1px solid var(--cd);display:flex;align-items:center;justify-content:center;z-index:300;padding:0 16px}
@@ -225,7 +313,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .psub{font-size:12px;opacity:.8}
 .pstats{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 .pst{background:rgba(255,255,255,.12);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:500}
-.sect{font-family:'Fraunces',serif;font-size:17px;font-weight:800;color:var(--g);margin-bottom:11px;display:flex;align-items:center;gap:7px}
+.sect{font-family:'Fraunces',serif;font-size:18px;font-weight:800;color:var(--g);margin-bottom:14px;margin-top:4px;display:flex;align-items:center;gap:7px}
 
 /* DAY CARDS (used in full week list) */
 .dg{display:grid;gap:9px;margin-bottom:22px}
@@ -272,23 +360,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .ddet-meta{flex:1}
 .ddet-day{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.8px}
 .ddet-dur{font-size:12px;color:var(--a);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px}
-.ddet-activity{font-size:15px;line-height:1.6;color:var(--tx);font-weight:500;padding-bottom:4px}
+.ddet-activity{font-size:16px;line-height:1.8;color:#1C3D2A;font-weight:500;padding:14px 0 8px}
+.act-block{margin-bottom:18px}
+.act-block:last-child{margin-bottom:0}
+.act-label{font-size:13px;font-weight:700;color:var(--a);margin-bottom:8px;letter-spacing:.2px}
+.act-bullets{display:flex;flex-direction:column;gap:7px}
+.act-bullet{display:flex;align-items:flex-start;gap:8px;font-size:15px;line-height:1.75;color:#1C3D2A}
+.act-bullet::before{content:"•";color:var(--a);font-weight:700;flex-shrink:0;margin-top:1px}
 .day-detail.ddet-done .ddet-activity{text-decoration:line-through;opacity:.6}
-.ddet-note{font-size:13px;line-height:1.6;color:var(--tm);background:var(--ap);border-radius:10px;padding:12px 14px;margin-top:8px}
+.ddet-note{font-size:14px;line-height:1.8;color:var(--tm);background:var(--ap);border-radius:12px;padding:16px 18px;margin-top:12px}
 
 /* NUTRITION */
-.nc{background:#fff;border-radius:var(--rad);padding:18px 22px;border:1.5px solid var(--cd);margin-bottom:22px}
-.nr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--cd)}
+.nc{background:#fff;border-radius:var(--rad);padding:20px 22px;border:1.5px solid var(--cd);margin-bottom:24px}
+.nr{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--cd)}
 .nr:last-child{border-bottom:none}
-.nk{font-size:12px;color:var(--ts);font-weight:500}
-.nv{font-size:13px;font-weight:700;color:var(--tx)}
-.nv.hl{color:var(--a);font-family:'Fraunces',serif;font-size:17px}
+.nk{font-size:14px;color:var(--ts);font-weight:500}
+.nv{font-size:15px;font-weight:700;color:var(--tx)}
+.nv.hl{color:var(--a);font-family:'Fraunces',serif;font-size:19px}
 .nv.gr{color:var(--gm)}
 
 /* TIPS */
-.tc{background:var(--ap);border-radius:var(--rad);padding:16px 20px;border:1.5px solid rgba(232,130,12,.2);margin-bottom:22px}
-.ti2{display:flex;gap:9px;margin-bottom:9px;font-size:13px;color:var(--tm);line-height:1.6}
-.ti2:last-child{margin-bottom:0}
+.tc{background:var(--ap);border-radius:var(--rad);padding:20px 22px;border:1.5px solid rgba(232,130,12,.2);margin-bottom:24px;display:flex;flex-direction:column;gap:14px}
+.ti2{display:flex;gap:10px;font-size:15px;color:var(--tm);line-height:1.8}
 
 /* WEIGHT TRACKER */
 .wt-card{background:#fff;border-radius:var(--rad);border:1.5px solid var(--cd);margin-bottom:16px;overflow:hidden}
@@ -328,7 +421,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .rc-week{font-weight:700;font-size:13px;color:var(--g)}
 .rc-score{font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:var(--a)}
 .rc-body{padding:14px 18px}
-.rc-text{font-size:12px;color:var(--tm);line-height:1.6;margin-bottom:12px}
+.rc-text{font-size:15px;color:var(--tm);line-height:1.8;margin-bottom:12px}
 .rc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .rc-stat{background:var(--cr);border-radius:8px;padding:10px;text-align:center}
 .rc-stat-n{font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--g)}
@@ -348,8 +441,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .photo-upload{display:none}
 
 /* VET SHARE */
-.vet-card{background:#fff;border-radius:var(--rad);border:1.5px solid var(--cd);padding:16px 18px;margin-bottom:14px}
-.vet-preview{background:var(--cr);border-radius:10px;padding:14px;border:1px solid var(--cd);font-size:12px;color:var(--tm);line-height:1.7;margin:12px 0;max-height:200px;overflow-y:auto}
+.vet-card{background:#fff;border-radius:var(--rad);border:1.5px solid var(--cd);padding:20px 22px;margin-bottom:16px}
+.vet-preview{background:var(--cr);border-radius:12px;padding:16px;border:1px solid var(--cd);font-size:13px;color:var(--tm);line-height:1.9;margin:14px 0;max-height:220px;overflow-y:auto}
 .vet-actions{display:flex;gap:8px;flex-wrap:wrap}
 
 /* NOTIFICATIONS */
@@ -392,6 +485,99 @@ function parsePlan(txt) {
     if (s!==-1&&e!==-1) return JSON.parse(c.slice(s,e+1));
   } catch{}
   return null;
+}
+
+// Génère un plan Claude depuis les données d'un chien — utilisable depuis n'importe quel contexte
+async function generatePlanForDog(d) {
+  const bi = BREEDS[d.breed]||BREEDS["Autre race"];
+  const ideal = Math.round((bi.ideal[0]+bi.ideal[1])/2);
+  const breedName = d.breed==="Autre race"?(d.custom||"race inconnue"):d.breed;
+
+  let weatherSummary = "Météo non disponible";
+  try {
+    const wRes = await fetch(`/api/weather?city=${encodeURIComponent(d.city)}`);
+    const wData = await wRes.json();
+    if (wData.list) {
+      weatherSummary = wData.list.map((item,i)=>{
+        const day = DAYS[i]||`Jour ${i+1}`;
+        const temp = Math.round(item.main.temp);
+        const desc = item.weather[0].description;
+        return `${day}: ${temp}°C, ${desc}`;
+      }).join(" | ");
+    }
+  } catch {}
+
+  const prompt=`Tu es un coach sportif et nutritionniste vétérinaire expert. Génère un programme bien-être personnalisé.
+PROFIL :
+- Nom : ${d.name} | Race : ${breedName} | Âge : ${d.age} ans
+- Poids actuel : ${d.weight} kg | Poids idéal : ${ideal} kg | Castré : ${d.neutered?"Oui":"Non"}
+- Ville : ${d.city} | Logement : ${d.housing} | Dispo : ${d.time} min/j
+- Météo de la semaine à ${d.city} : ${weatherSummary}
+- Sexe : ${d.gender === "male" ? "Mâle" : "Femelle"}
+- Statut reproducteur : ${d.reproStatus === "pregnant" ? "⚠️ GESTANTE — pas d'effort intense, nutrition renforcée obligatoire" : d.reproStatus === "nursing" ? "⚠️ ALLAITANTE — besoins caloriques très élevés, exercice léger uniquement" : "Non applicable"}
+- Accès aquatique : ${d.waterAccess === "none" ? "Aucun" : d.waterAccess === "pool" ? "Piscine privée" : d.waterAccess === "lake_river" ? "Lac ou rivière" : "Plage"}
+- Activités aquatiques souhaitées : ${d.waterActivities === "yes" ? "Oui" : "Non — ne jamais proposer d'activités aquatiques"}
+- Activité actuelle : ${d.activity} | Objectifs : ${(d.goals||[]).join(" + ")}
+- Sensibilités race : ${bi.s} | Croquettes : ${d.food||"non précisé"} | Ration : ${d.ration||"non précisée"} g/j
+- Pathologies / conditions médicales : ${d.pathologies||"Aucune signalée"}
+
+RÈGLES STRICTES — respecter sans exception :
+
+1. Chaque activité doit être ultra-concrète et actionnable. Jamais vague.
+   - ❌ "Stimulation mentale"
+   - ✅ "Jeu du gobelet : cache une friandise sous 3 gobelets retournés, fais chercher le bon (10 min)"
+   - ❌ "Jeux de rapport"
+   - ✅ "Fetch avec balle : lance à 15m, commande rapport, récompense au retour (20 min)"
+   - ❌ "Étirements"
+   - ✅ "Étirements passifs : tiens la patte avant tendue 10 secondes x3, puis patte arrière x3 — aide à la récupération musculaire après effort"
+
+2. Activités aquatiques : si waterActivities === "no", ne JAMAIS proposer natation, baignade, lac, rivière, piscine ou plage. Avoir accès à une piscine ou une plage ne signifie pas que l'utilisateur veut l'utiliser.
+
+3. Stimulation mentale — utiliser UNIQUEMENT ces activités concrètes :
+   - Tapis de léchage (étale de la pâtée sur un tapis à picots)
+   - Jeu du gobelet (cache friandise sous gobelet retourné)
+   - Kong congelé (rempli de croquettes + bouillon de légumes congelé)
+   - Recherche olfactive (cache friandises dans différentes pièces)
+   - Apprentissage d'un ordre nouveau (nom des jouets, "va chercher", "ferme la porte")
+   - Parcours d'obstacles DIY (chaises, coussins, cartons)
+
+4. Pour les races à fort instinct de travail (Malinois, Border Collie, Berger Allemand, Husky, Bouvier), inclure obligatoirement au moins 3 activités de stimulation mentale dans la semaine.
+
+5. Adapter toutes les activités au logement : si appartement → aucune activité nécessitant un grand espace extérieur privé.
+
+6. Si la femelle est gestante ou allaitante : programme doux uniquement, pas d'effort intense, pas de sauts, pas de course. Nutrition renforcée obligatoire dans les conseils.
+
+7. La durée affichée doit être réaliste et inclure la préparation si nécessaire. Ex : "Kong congelé : 5 min de préparation la veille + 20 min d'occupation".
+
+9. Si l'objectif inclut "Prise de poids" :
+   - Ne JAMAIS réduire la ration alimentaire — au contraire, augmenter de 10 à 20%
+   - Favoriser des exercices de renforcement musculaire (montées de côtes, résistance, jeux de traction)
+   - Éviter les exercices cardio intensifs qui brûlent trop de calories
+   - Dans le plan nutritionnel, recommended_ration_g doit être SUPÉRIEUR à current_ration_g
+   - reduction_pct doit être négatif (ex: -15 signifie +15% de ration)
+   - Mentionner dans les breed_tips l'importance des protéines et des graisses saines
+
+8. Adapter chaque jour du programme à la météo réelle :
+   - Si température > 28°C : éviter les sorties entre 11h et 17h, mentionner les horaires dans breed_note
+   - Si température < 5°C : réduire la durée des sorties pour les races sensibles au froid (Chihuahua, Yorkshire, Bouledogue)
+   - Si pluie ou orage : proposer une alternative indoor concrète pour ce jour précis
+   - Si beau temps et température idéale (15-25°C) : profiter pour augmenter légèrement la durée
+
+Réponds UNIQUEMENT en JSON valide :
+{"weekly_plan":[{"day":"Lundi","activity":"...","duration_min":25,"intensity":2,"is_rest":false,"breed_note":"..."}],"nutrition":{"daily_calories":1350,"recommended_ration_g":280,"current_ration_g":${d.ration||0},"reduction_pct":15,"treats_max_per_day":2,"water_ml":800,"note":"..."},"breed_tips":["conseil 1","conseil 2","conseil 3"],"weekly_goal":"Objectif semaine 1","estimated_weeks":12}`;
+
+  const res = await fetch("/api/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:5000,messages:[{role:"user",content:prompt}]})
+  });
+  if(!res.ok) throw new Error("Erreur API "+res.status);
+  const data = await res.json();
+  const txt = data.content?.map(b=>b.text||"").join("")||"";
+  console.log("[chat] réponse brute Claude :", txt);
+  const plan = parsePlan(txt);
+  if(!plan) throw new Error("Format invalide — voir console pour la réponse brute");
+  return plan;
 }
 
 function today() {
@@ -471,7 +657,7 @@ function WeightChart({ entries, ideal }) {
 }
 
 // ─── HOME VIEW (indépendant, affiché par défaut) ──────────────────────────
-function HomeView({ plan, profile, done, currentWeek }) {
+function HomeView({ plan, profile, done, currentWeek, user, userName, onAccount }) {
   const todayIdx = new Date().getDay();
   const dayIdx = todayIdx === 0 ? 6 : todayIdx - 1;
 
@@ -484,7 +670,7 @@ function HomeView({ plan, profile, done, currentWeek }) {
   const totalDays = plan.weekly_plan?.length || 7;
   const doneCount = Object.values(done).filter(Boolean).length;
   const todayPlan = plan.weekly_plan?.[dayIdx];
-  const initial = (profile.name||"?")[0].toUpperCase();
+  const userInitial = userName ? userName[0].toUpperCase() : (user?.email||"?")[0].toUpperCase();
 
   const rawConseils = todayPlan?.breed_note || "";
   const conseilBullets = rawConseils.length > 0
@@ -496,10 +682,12 @@ function HomeView({ plan, profile, done, currentWeek }) {
       {/* Home header */}
       <div className="home-header">
         <div>
-          <div className="home-greeting">Bonjour ! 👋</div>
+          <div className="home-greeting">{userName ? `Bonjour ${userName} ! 👋` : "Bonjour ! 👋"}</div>
           <div className="home-sub">Voici le plan de {profile.name} aujourd'hui</div>
         </div>
-        <div className="home-avatar">{initial}</div>
+        {user&&(
+          <div className="home-avatar" style={{cursor:"pointer"}} onClick={onAccount}>{userInitial}</div>
+        )}
       </div>
 
       {/* Profile card */}
@@ -561,11 +749,58 @@ function HomeView({ plan, profile, done, currentWeek }) {
   );
 }
 
+/// ─── ACTIVITY TEXT FORMATTER ────────────────────────────────────────────────
+function parseActivityBlocks(text) {
+  if (!text) return [];
+  const lower = text.toLowerCase();
+  const matinIdx = lower.search(/\bmatin\b/);
+  const soirIdx  = lower.search(/\bsoir\b/);
+
+  if (matinIdx !== -1 && soirIdx !== -1 && matinIdx < soirIdx) {
+    return [
+      { label: "🌅 Matin", sentences: splitToLines(text.slice(matinIdx, soirIdx)) },
+      { label: "🌙 Soir",  sentences: splitToLines(text.slice(soirIdx)) },
+    ];
+  }
+  return [{ label: null, sentences: splitToLines(text) }];
+}
+
+function splitToLines(text) {
+  return text
+    .replace(/\b(matin|soir)\b[^:—]*/i, "") // strip leading keyword+time
+    .split(/(?:[.!]\s+|(?:\s—\s)|(?:;\s*))/)
+    .map(s => s.replace(/^[,:\s]+|[,:\s]+$/g, "").trim())
+    .filter(s => s.length > 6);
+}
+
+function ActivityBlocks({ text }) {
+  const blocks = parseActivityBlocks(text);
+  return (
+    <div className="ddet-activity">
+      {blocks.map((b, bi) => (
+        <div key={bi} className="act-block">
+          {b.label && <div className="act-label">{b.label}</div>}
+          <div className="act-bullets">
+            {b.sentences.map((s, si) => (
+              <div key={si} className="act-bullet">{s}</div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── TAB: PROGRAMME ───────────────────────────────────────────────────────
-function TabProgramme({ plan, profile, done, onToggle, onHardWeek }) {
+function TabProgramme({ plan, profile, done, onToggle, onHardWeek, isPro, onPaywall }) {
   const todayIdx = new Date().getDay();
   const dayIdx = todayIdx === 0 ? 6 : todayIdx - 1;
   const [selectedDay, setSelectedDay] = useState(dayIdx);
+
+  const handleSelectDay = (i) => {
+    if (!isPro && i > 0) { onPaywall && onPaywall(); return; }
+    setSelectedDay(i);
+  };
 
   if (!plan) return null;
   const day = plan.weekly_plan?.[selectedDay];
@@ -583,9 +818,9 @@ function TabProgramme({ plan, profile, done, onToggle, onHardWeek }) {
           else if (isDone) cls += " day-done";
           else if (isToday) cls += " day-today";
           return (
-            <button key={i} className={cls} onClick={()=>setSelectedDay(i)}>
+            <button key={i} className={cls} onClick={()=>handleSelectDay(i)}>
               <span className="dc-lbl">{d}</span>
-              <span className="dc-num">{isRest ? "💤" : i+1}</span>
+              <span className="dc-num">{!isPro && i > 0 ? "🔒" : isRest ? "💤" : i+1}</span>
               {isDone && <span className="dc-dot"/>}
             </button>
           );
@@ -616,7 +851,7 @@ function TabProgramme({ plan, profile, done, onToggle, onHardWeek }) {
               </button>
             )}
           </div>
-          <div className="ddet-activity">{day.activity}</div>
+          <ActivityBlocks text={day.activity}/>
           {day.breed_note&&<div className="ddet-note">💡 {day.breed_note}</div>}
         </div>
       )}
@@ -956,10 +1191,19 @@ function Onboarding({ onComplete }) {
   const [err, setErr] = useState("");
   const [loadMsg, setLoadMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const [authTab, setAuthTab] = useState("signup");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPwd, setAuthPwd] = useState("");
+  const [authConfirm, setAuthConfirm] = useState("");
+  const [authErr, setAuthErr] = useState("");
+  const [authOk, setAuthOk] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
   const [d, setD] = useState({
     name:"",breed:"",custom:"",age:3,gender:null,neutered:true,reproStatus:"none",
     weight:20,city:"",housing:"",waterAccess:null,waterActivities:null,
-    activity:"",time:30,goals:[],food:"",ration:""
+    activity:"",time:30,goals:[],food:"",ration:"",pathologies:""
   });
 
   const upd = f => setD(p=>({...p,...f}));
@@ -967,130 +1211,108 @@ function Onboarding({ onComplete }) {
   const bi = BREEDS[d.breed]||BREEDS["Autre race"];
   const ideal = Math.round((bi.ideal[0]+bi.ideal[1])/2);
   const breedName = d.breed==="Autre race"?(d.custom||"race inconnue"):d.breed;
-  const toggleGoal = v => upd({goals: d.goals.includes(v)?d.goals.filter(x=>x!==v):[...d.goals,v]});
+  const toggleGoal = v => {
+    if (d.goals.includes(v)) {
+      upd({goals: d.goals.filter(x=>x!==v)});
+    } else {
+      let next = [...d.goals, v];
+      if (v==="Perte de poids") next = next.filter(x=>x!=="Prise de poids");
+      if (v==="Prise de poids") next = next.filter(x=>x!=="Perte de poids");
+      upd({goals: next});
+    }
+  };
   const housings=[
     {v:"Appartement sans jardin",icon:"🏢",desc:"Accès extérieur limité"},
     {v:"Appartement avec terrasse",icon:"🌿",desc:"Petit espace extérieur"},
     {v:"Maison avec jardin",icon:"🏡",desc:"Espace extérieur disponible"},
   ];
-  const pct=[0,12,25,37,50,62,75,87,100];
+  const pct=[0,11,22,33,44,56,67,78,89,100];
+
+  const handleGoogleAuth = async () => {
+    // S'assurer que les données sont sauvegardées avant la redirection Google
+    localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+  };
+
+  const handleForgotPwd = async () => {
+    if (!authEmail) { setAuthErr("Entre ton email pour recevoir le lien."); return; }
+    setAuthLoading(true); setAuthErr("");
+    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    setAuthLoading(false);
+    if (error) { setAuthErr(error.message); return; }
+    setResetSent(true);
+  };
+
+  const handleAuth = async () => {
+    setAuthErr(""); setResetSent(false);
+    if (!authEmail || !authPwd) { setAuthErr("Email et mot de passe requis."); return; }
+    setAuthLoading(true);
+    if (authTab === "signup") {
+      if (authPwd.length < 6) { setAuthErr("Le mot de passe doit faire au moins 6 caractères."); setAuthLoading(false); return; }
+      if (authPwd !== authConfirm) { setAuthErr("Les mots de passe ne correspondent pas."); setAuthLoading(false); return; }
+      // S'assurer que les données sont bien sauvegardées avant l'inscription
+      localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
+      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPwd });
+      setAuthLoading(false);
+      if (error) { setAuthErr(error.message); return; }
+      // NE PAS générer le plan — l'utilisateur doit confirmer son email d'abord
+      setAuthOk(true);
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPwd });
+      setAuthLoading(false);
+      if (error) { setAuthErr(error.message); return; }
+      // Connecté directement → générer le plan maintenant
+      generate();
+    }
+  };
 
   const generate = async () => {
-    setLoading(true);
-    setErr("");
-    const msgs=[`Analyse du profil de ${d.name}...`,"Calcul du poids idéal...","Programme d'exercice...","Plan nutritionnel...","Finalisation..."];
+    setLoading(true); setErr("");
+    const msgs=[
+      `Analyse du profil de ${d.name}...`,
+      "Calcul des besoins nutritionnels...",
+      "Création du programme d'exercices...",
+      "Personnalisation des conseils...",
+      "Finalisation du plan..."
+    ];
     let mi=0; setLoadMsg(msgs[0]);
-    const t=setInterval(()=>{mi++;if(mi<msgs.length)setLoadMsg(msgs[mi]);},2000);
+    setCountdown(30);
+    const t=setInterval(()=>{mi++;if(mi<msgs.length)setLoadMsg(msgs[mi]);},6000);
+    const cdt=setInterval(()=>setCountdown(c=>c>0?c-1:0),1000);
     try {
-      let weatherSummary = "Météo non disponible";
-      try {
-        const wRes = await fetch(`/api/weather?city=${encodeURIComponent(d.city)}`);
-        const wData = await wRes.json();
-        if (wData.list) {
-          weatherSummary = wData.list.map((item, i) => {
-            const day = DAYS[i] || `Jour ${i+1}`;
-            const temp = Math.round(item.main.temp);
-            const desc = item.weather[0].description;
-            return `${day}: ${temp}°C, ${desc}`;
-          }).join(" | ");
-        }
-      } catch(e) {
-        weatherSummary = "Météo non disponible";
-      }
-      console.log("Météo récupérée :", weatherSummary);
-
-      const prompt=`Tu es un coach sportif et nutritionniste vétérinaire expert. Génère un programme bien-être personnalisé.
-PROFIL :
-- Nom : ${d.name} | Race : ${breedName} | Âge : ${d.age} ans
-- Poids actuel : ${d.weight} kg | Poids idéal : ${ideal} kg | Castré : ${d.neutered?"Oui":"Non"}
-- Ville : ${d.city} | Logement : ${d.housing} | Dispo : ${d.time} min/j
-- Météo de la semaine à ${d.city} : ${weatherSummary}
-- Sexe : ${d.gender === "male" ? "Mâle" : "Femelle"}
-- Statut reproducteur : ${d.reproStatus === "pregnant" ? "⚠️ GESTANTE — pas d'effort intense, nutrition renforcée obligatoire" : d.reproStatus === "nursing" ? "⚠️ ALLAITANTE — besoins caloriques très élevés, exercice léger uniquement" : "Non applicable"}
-- Accès aquatique : ${d.waterAccess === "none" ? "Aucun" : d.waterAccess === "pool" ? "Piscine privée" : d.waterAccess === "lake_river" ? "Lac ou rivière" : "Plage"}
-- Activités aquatiques souhaitées : ${d.waterActivities === "yes" ? "Oui" : "Non — ne jamais proposer d'activités aquatiques"}
-- Activité actuelle : ${d.activity} | Objectifs : ${d.goals.join(" + ")}
-- Sensibilités race : ${bi.s} | Croquettes : ${d.food||"non précisé"} | Ration : ${d.ration||"non précisée"} g/j
-
-RÈGLES STRICTES — respecter sans exception :
-
-1. Chaque activité doit être ultra-concrète et actionnable. Jamais vague.
-   - ❌ "Stimulation mentale"
-   - ✅ "Jeu du gobelet : cache une friandise sous 3 gobelets retournés, fais chercher le bon (10 min)"
-   - ❌ "Jeux de rapport"
-   - ✅ "Fetch avec balle : lance à 15m, commande rapport, récompense au retour (20 min)"
-   - ❌ "Étirements"
-   - ✅ "Étirements passifs : tiens la patte avant tendue 10 secondes x3, puis patte arrière x3 — aide à la récupération musculaire après effort"
-
-2. Activités aquatiques : si waterActivities === "no", ne JAMAIS proposer natation, baignade, lac, rivière, piscine ou plage. Avoir accès à une piscine ou une plage ne signifie pas que l'utilisateur veut l'utiliser.
-
-3. Stimulation mentale — utiliser UNIQUEMENT ces activités concrètes :
-   - Tapis de léchage (étale de la pâtée sur un tapis à picots)
-   - Jeu du gobelet (cache friandise sous gobelet retourné)
-   - Kong congelé (rempli de croquettes + bouillon de légumes congelé)
-   - Recherche olfactive (cache friandises dans différentes pièces)
-   - Apprentissage d'un ordre nouveau (nom des jouets, "va chercher", "ferme la porte")
-   - Parcours d'obstacles DIY (chaises, coussins, cartons)
-
-4. Pour les races à fort instinct de travail (Malinois, Border Collie, Berger Allemand, Husky, Bouvier), inclure obligatoirement au moins 3 activités de stimulation mentale dans la semaine.
-
-5. Adapter toutes les activités au logement : si appartement → aucune activité nécessitant un grand espace extérieur privé.
-
-6. Si la femelle est gestante ou allaitante : programme doux uniquement, pas d'effort intense, pas de sauts, pas de course. Nutrition renforcée obligatoire dans les conseils.
-
-7. La durée affichée doit être réaliste et inclure la préparation si nécessaire. Ex : "Kong congelé : 5 min de préparation la veille + 20 min d'occupation".
-
-9. Si l'objectif inclut "Prise de poids" :
-   - Ne JAMAIS réduire la ration alimentaire — au contraire, augmenter de 10 à 20%
-   - Favoriser des exercices de renforcement musculaire (montées de côtes, résistance, jeux de traction)
-   - Éviter les exercices cardio intensifs qui brûlent trop de calories
-   - Dans le plan nutritionnel, recommended_ration_g doit être SUPÉRIEUR à current_ration_g
-   - reduction_pct doit être négatif (ex: -15 signifie +15% de ration)
-   - Mentionner dans les breed_tips l'importance des protéines et des graisses saines
-
-8. Adapter chaque jour du programme à la météo réelle :
-   - Si température > 28°C : éviter les sorties entre 11h et 17h, mentionner les horaires dans breed_note
-   - Si température < 5°C : réduire la durée des sorties pour les races sensibles au froid (Chihuahua, Yorkshire, Bouledogue)
-   - Si pluie ou orage : proposer une alternative indoor concrète pour ce jour précis
-   - Si beau temps et température idéale (15-25°C) : profiter pour augmenter légèrement la durée
-
-Réponds UNIQUEMENT en JSON valide :
-{"weekly_plan":[{"day":"Lundi","activity":"...","duration_min":25,"intensity":2,"is_rest":false,"breed_note":"..."}],"nutrition":{"daily_calories":1350,"recommended_ration_g":280,"current_ration_g":${d.ration||0},"reduction_pct":15,"treats_max_per_day":2,"water_ml":800,"note":"..."},"breed_tips":["conseil 1","conseil 2","conseil 3"],"weekly_goal":"Objectif semaine 1","estimated_weeks":12}`;
-
-      const res=await fetch("/api/chat",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:5000,messages:[{role:"user",content:prompt}]})
-      });
-      clearInterval(t);
-      if(!res.ok) throw new Error("Erreur API "+res.status);
-      const data=await res.json();
-      const txt=data.content?.map(b=>b.text||"").join("")||"";
-      console.log("[chat] réponse brute Claude :", txt);
-      const plan=parsePlan(txt);
-      if(!plan) throw new Error("Format invalide — voir console pour la réponse brute");
+      const plan = await generatePlanForDog(d);
+      clearInterval(t); clearInterval(cdt);
+      localStorage.removeItem('canymo_pending_dog');
       onComplete(d, plan);
     } catch(e) {
-      clearInterval(t); setLoading(false);
+      clearInterval(t); clearInterval(cdt); setLoading(false);
       setErr(e.message||"Erreur. Réessaie.");
     }
   };
 
   if (loading) return (
     <div className="ld">
-      <span className="ldog">🐕</span>
-      <div className="lt">Génération en cours...</div>
+      <div className="ld-spinner"/>
+      <div className="lt">Création du programme personnalisé de {d.name}...</div>
       <p className="ls">{loadMsg}</p>
-      <div className="dots"><div className="dot"/><div className="dot"/><div className="dot"/></div>
+      <div className="ld-countdown">
+        {countdown > 0 ? `Environ ${countdown} seconde${countdown>1?"s":""} restante${countdown>1?"s":""}` : "Presque terminé..."}
+      </div>
     </div>
   );
 
   return (
     <div className="ob">
-      <div className="pbar"><div className="pfill" style={{width:`${pct[step]||0}%`}}/></div>
+      <div className="ob-prog">
+        <div className="ob-prog-lbl">Étape {step} sur 9</div>
+        <div className="pbar"><div className="pfill" style={{width:`${pct[step]||0}%`}}/></div>
+      </div>
 
       {step===1&&<>
-        <div className="slbl">Étape 1 sur 8</div>
+        <div className="slbl">Étape 1 sur 9</div>
         <div className="stitle">Comment s'appelle ton chien ?</div>
         <div className="ssub">On va créer un programme 100% personnalisé pour lui.</div>
         <div className="fg">
@@ -1105,7 +1327,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===2&&<>
-        <div className="slbl">Étape 2 sur 8</div>
+        <div className="slbl">Étape 2 sur 9</div>
         <div className="stitle">La race de {d.name} ?</div>
         <div className="ssub">Chaque race a des besoins différents. C'est là que la magie opère.</div>
         <div className="fg">
@@ -1129,7 +1351,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===3&&<>
-        <div className="slbl">Étape 3 sur 8</div>
+        <div className="slbl">Étape 3 sur 9</div>
         <div className="stitle">Quel âge a {d.name} ?</div>
         <div className="ssub">L'âge influence l'intensité et les précautions.</div>
         <div className="rrow"><span className="flbl">Âge</span><span className="rval">{d.age} {d.age<=1?"an":"ans"}</span></div>
@@ -1172,7 +1394,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===4&&<>
-        <div className="slbl">Étape 4 sur 8</div>
+        <div className="slbl">Étape 4 sur 9</div>
         <div className="stitle">Le poids de {d.name} ?</div>
         <div className="ssub">Poids idéal estimé pour {breedName} : {bi.ideal[0]}–{bi.ideal[1]} kg.</div>
         <div className="rrow"><span className="flbl">Poids actuel</span><span className="rval">{d.weight} kg</span></div>
@@ -1185,7 +1407,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===5&&<>
-        <div className="slbl">Étape 5 sur 8</div>
+        <div className="slbl">Étape 5 sur 9</div>
         <div className="stitle">Où vit {d.name} ?</div>
         <div className="ssub">La ville permet d'adapter les sorties à la météo.</div>
         <div className="fg">
@@ -1230,7 +1452,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===6&&<>
-        <div className="slbl">Étape 6 sur 8</div>
+        <div className="slbl">Étape 6 sur 9</div>
         <div className="stitle">Niveau d'activité de {d.name}</div>
         <div className="ssub">Sois honnête — pour un programme réaliste et progressif.</div>
         {ACTS.map(a=>(
@@ -1255,7 +1477,7 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===7&&<>
-        <div className="slbl">Étape 7 sur 8</div>
+        <div className="slbl">Étape 7 sur 9</div>
         <div className="stitle">Objectifs pour {d.name}</div>
         <div className="ssub">Le programme sera adapté en conséquence.</div>
         <div className="mh">✓ Tu peux sélectionner plusieurs objectifs</div>
@@ -1274,6 +1496,12 @@ Réponds UNIQUEMENT en JSON valide :
           })}
         </div>
         {d.goals.length>=2&&<div className="an" style={{marginTop:11}}>🤖 <span>Combinaison : <strong>{d.goals.join(" + ")}</strong></span></div>}
+        {d.goals.includes("Prise de poids")&&d.weight>ideal&&(
+          <div className="goal-warn">⚠️ <strong>{d.name}</strong> est actuellement au-dessus de son poids idéal. Êtes-vous sûr de vouloir un objectif de prise de poids ?</div>
+        )}
+        {d.goals.includes("Perte de poids")&&d.weight<ideal&&(
+          <div className="goal-warn">⚠️ <strong>{d.name}</strong> semble déjà en dessous de son poids idéal. Êtes-vous sûr de vouloir un objectif de perte de poids ?</div>
+        )}
         <div className="snav">
           <button className="btn btn-ghost" onClick={()=>go(6)}>← Retour</button>
           <button className="btn btn-g" onClick={()=>go(8)} disabled={!d.goals.length}>Continuer →</button>
@@ -1281,7 +1509,31 @@ Réponds UNIQUEMENT en JSON valide :
       </>}
 
       {step===8&&<>
-        <div className="slbl">Étape 8 sur 8</div>
+        <div className="slbl">Étape 8 sur 9</div>
+        <div className="stitle">Votre chien a-t-il des pathologies particulières ?</div>
+        <div className="ssub">Problèmes articulaires, cardiaques, respiratoires, allergies, etc.</div>
+        <div className="fg">
+          <textarea
+            className="inp"
+            rows={4}
+            placeholder="Ex : Arthrose légère, souffle au cœur, allergie au poulet..."
+            value={d.pathologies}
+            onChange={e=>upd({pathologies:e.target.value})}
+            style={{resize:"none",lineHeight:1.6}}
+          />
+        </div>
+        <div className="warn-box">
+          <span className="warn-box-icon">⚠️</span>
+          <span>Canymo ne remplace pas un avis vétérinaire. En cas de doute sur la santé de votre chien, consultez un professionnel.</span>
+        </div>
+        <div className="snav">
+          <button className="btn btn-ghost" onClick={()=>go(7)}>← Retour</button>
+          <button className="btn btn-g" onClick={()=>go(9)}>Continuer →</button>
+        </div>
+      </>}
+
+      {step===9&&<>
+        <div className="slbl">Étape 9 sur 9</div>
         <div className="stitle">Nutrition actuelle</div>
         <div className="ssub">Optionnel mais recommandé pour des conseils précis.</div>
         <div className="fg">
@@ -1293,20 +1545,103 @@ Réponds UNIQUEMENT en JSON valide :
           <input className="inp" type="number" placeholder="Ex: 300" value={d.ration} onChange={e=>upd({ration:e.target.value})}/>
         </div>
         <div className="an">🤖 <span>L'IA va générer le programme de {d.name} à {d.city}. ~15 secondes.</span></div>
-        {err&&<div className="err">❌ {err}</div>}
         <div className="snav">
-          <button className="btn btn-ghost" onClick={()=>go(7)}>← Retour</button>
-          <button className="btn btn-g" onClick={generate}>Générer le programme 🚀</button>
+          <button className="btn btn-ghost" onClick={()=>go(8)}>← Retour</button>
+          <button className="btn btn-g" onClick={()=>{
+            localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
+            go(10);
+          }}>Continuer →</button>
         </div>
+      </>}
+
+      {step===10&&<>
+        <div className="stitle">Dernière étape avant le programme de {d.name} !</div>
+        <div className="ssub">Créez votre compte pour accéder à votre programme depuis n'importe quel appareil.</div>
+        <div className="auth-tabs">
+          <button className={`auth-tab${authTab==="signup"?" active":""}`} onClick={()=>{setAuthTab("signup");setAuthErr("");setResetSent(false);}}>Créer un compte</button>
+          <button className={`auth-tab${authTab==="signin"?" active":""}`} onClick={()=>{setAuthTab("signin");setAuthErr("");setResetSent(false);}}>J'ai déjà un compte</button>
+        </div>
+
+        {authOk ? (
+          <div className="auth-success">✉️ Un email de confirmation a été envoyé à <strong>{authEmail}</strong>.<br/><br/>Vérifie ta boîte mail puis reviens ici pour voir le programme de <strong>{d.name}</strong> !</div>
+        ) : (<>
+          {resetSent&&<div className="auth-reset-ok">📩 Lien de réinitialisation envoyé à {authEmail}.</div>}
+          <button className="google-btn" onClick={handleGoogleAuth}>
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Continuer avec Google
+          </button>
+          <div className="auth-sep">ou</div>
+          <div className="fg">
+            <label className="flbl">Email</label>
+            <input className="inp" type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="ton@email.com" autoComplete="email"/>
+          </div>
+          <div className="fg">
+            <label className="flbl">Mot de passe</label>
+            <input className="inp" type="password" value={authPwd} onChange={e=>setAuthPwd(e.target.value)} placeholder="6 caractères minimum" autoComplete={authTab==="signup"?"new-password":"current-password"}/>
+          </div>
+          {authTab==="signup"&&(
+            <div className="fg">
+              <label className="flbl">Confirmer le mot de passe</label>
+              <input className="inp" type="password" value={authConfirm} onChange={e=>setAuthConfirm(e.target.value)} placeholder="Répète le mot de passe" autoComplete="new-password"/>
+            </div>
+          )}
+          {authErr&&<div className="err">❌ {authErr}</div>}
+          {authTab==="signin"&&(
+            <div style={{textAlign:"right",marginBottom:12}}>
+              <button className="link-btn" onClick={handleForgotPwd}>Mot de passe oublié ?</button>
+            </div>
+          )}
+          <div className="snav">
+            <button className="btn btn-ghost" onClick={()=>go(9)}>← Retour</button>
+            <button className="btn btn-g" onClick={handleAuth} disabled={authLoading}>
+              {authLoading?"...":(authTab==="signup"?"Créer mon compte":"Me connecter")}
+            </button>
+          </div>
+        </>)}
       </>}
     </div>
   );
 }
 
+// ─── PAYWALL OVERLAY ────────────────────────────────────────────────────────
+function PaywallOverlay({ dogName, onClose }) {
+  return (
+    <div className="paywall-wrap">
+      <div className="paywall-blur" onClick={onClose}/>
+      <div className="paywall-card">
+        <div className="paywall-icon">✨</div>
+        <div className="paywall-title">Débloquez tout le programme</div>
+        <div className="paywall-sub">Accédez au programme complet de {dogName} et à tous les outils de suivi</div>
+        <ul className="paywall-list">
+          <li>✅ Programme personnalisé 7j/7</li>
+          <li>✅ Suivi nutritionnel complet</li>
+          <li>✅ Conseils adaptés à la race</li>
+          <li>✅ Historique et bilan de progression</li>
+          <li>✅ Fiches vétérinaires</li>
+        </ul>
+        <button className="paywall-cta" onClick={()=>{ console.log("Rediriger vers Stripe Checkout"); }}>
+          Passer à Pro — 5,99€/mois
+        </button>
+        <div className="paywall-hint">Annulable à tout moment</div>
+        <button className="paywall-skip" onClick={onClose}>Non merci, continuer en gratuit</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── DASHBOARD ─────────────────────────────────────────────────────────────
-function Dashboard({ profile, plan, onReset }) {
+function Dashboard({ dogId, profile, plan, onSwitchDog, onDeleteDog, onAddDog, onPlanUpdate, user, onAccount }) {
   const [tab, setTab] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [isPro, setIsPro] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [done, setDone] = useState({});
   const [weights, setWeights] = useState([{date: today(), weight: profile.weight}]);
   const [photos, setPhotos] = useState({});
@@ -1321,9 +1656,10 @@ function Dashboard({ profile, plan, onReset }) {
   const doneCount = Object.values(done).filter(Boolean).length;
 
   useEffect(()=>{
+    const k = dogId;
     Promise.all([
-      load("cny_done"),load("cny_weights"),load("cny_photos"),
-      load("cny_notifs"),load("cny_recaps"),load("cny_doneHistory")
+      load(`cny_done_${k}`),load(`cny_weights_${k}`),load(`cny_photos_${k}`),
+      load(`cny_notifs_${k}`),load(`cny_recaps_${k}`),load(`cny_dh_${k}`)
     ]).then(([d,w,p,n,r,dh])=>{
       if(d) setDone(d);
       if(w) setWeights(w);
@@ -1332,25 +1668,37 @@ function Dashboard({ profile, plan, onReset }) {
       if(r) setRecaps(r);
       if(dh) setDoneHistory(dh);
     });
-  },[]);
+  },[dogId]);
+
+  useEffect(()=>{
+    if (!user) return;
+    supabase.from("profiles").select("first_name").eq("id", user.id).single()
+      .then(({data})=>{ if(data?.first_name) setUserName(data.first_name); });
+  },[user]);
+
+  useEffect(()=>{
+    if (!user) return;
+    supabase.from("subscriptions").select("status,plan").eq("user_id", user.id).single()
+      .then(({data})=>{ setIsPro(checkIsPro(user.email, data)); });
+  },[user]);
 
   const toggleDone = useCallback(async (i)=>{
     const next = {...done,[i]:!done[i]};
     setDone(next);
-    await save("cny_done",next);
-  },[done]);
+    await save(`cny_done_${dogId}`,next);
+  },[done,dogId]);
 
   const addWeight = useCallback(async (entry)=>{
     const next=[...weights,entry];
     setWeights(next);
-    await save("cny_weights",next);
-  },[weights]);
+    await save(`cny_weights_${dogId}`,next);
+  },[weights,dogId]);
 
   const handlePhoto = useCallback(async (type,data)=>{
     const next={...photos,[type]:data};
     setPhotos(next);
-    await save("cny_photos",next);
-  },[photos]);
+    await save(`cny_photos_${dogId}`,next);
+  },[photos,dogId]);
 
   const toggleNotif = useCallback(async (key,val)=>{
     if(val && "Notification" in window) {
@@ -1360,16 +1708,16 @@ function Dashboard({ profile, plan, onReset }) {
     }
     const next={...notifs,[key]:val};
     setNotifs(next);
-    await save("cny_notifs",next);
-  },[notifs,profile.name]);
+    await save(`cny_notifs_${dogId}`,next);
+  },[notifs,profile.name,dogId]);
 
   const generateBilan = useCallback(async (weekNum)=>{
     if(weekNum==="new") {
       const newHistory={...doneHistory,[currentWeek]:done};
       setDoneHistory(newHistory);
       setDone({});
-      await save("cny_done",{});
-      await save("cny_doneHistory",newHistory);
+      await save(`cny_done_${dogId}`,{});
+      await save(`cny_dh_${dogId}`,newHistory);
       return;
     }
     const weekDone=doneHistory[weekNum]||done;
@@ -1395,8 +1743,8 @@ Objectifs : ${(profile.goals||[]).join(", ")}
     const txt=data.content?.map(b=>b.text||"").join("")||"";
     const next={...recaps,[weekNum]:txt};
     setRecaps(next);
-    await save("cny_recaps",next);
-  },[doneHistory,done,weights,profile,breedName,recaps,currentWeek]);
+    await save(`cny_recaps_${dogId}`,next);
+  },[doneHistory,done,weights,profile,breedName,recaps,currentWeek,dogId]);
 
   const handleHardWeek = async ()=>{
     const prompt=`Tu es un coach vétérinaire compréhensif. Cette semaine a été difficile pour ${profile.name} (${breedName}, ${profile.age} ans).
@@ -1416,24 +1764,31 @@ Réponds UNIQUEMENT en JSON :
         const data=await res.json();
         const txt=data.content?.map(b=>b.text||"").join("")||"";
         const newPlan=parsePlan(txt);
-        if(newPlan){setCurrentPlan(newPlan);setDone({});}
+        if(newPlan){setCurrentPlan(newPlan);setDone({});onPlanUpdate&&onPlanUpdate(newPlan);}
       }
     } catch {}
   };
 
   const tabs=[
-    {k:null,icon:"🏠",label:"Accueil"},
+    {k:null,  icon:"🏠",label:"Accueil"},
     {k:"programme",icon:"🏃",label:"Programme"},
-    {k:"nutrition",icon:"🍗",label:"Nutrition"},
-    {k:"conseils",icon:"🧬",label:"Conseil"},
-    {k:"suivi",icon:"📊",label:"Suivi"},
-    {k:"bilan",icon:"🏆",label:"Bilan"},
-    {k:"veto",icon:"🏥",label:"Véto"},
+    {k:"nutrition",icon:"🍗",label:"Nutrition", pro:true},
+    {k:"conseils", icon:"🧬",label:"Conseil",   pro:true},
+    {k:"suivi",    icon:"📊",label:"Suivi",     pro:true},
+    {k:"bilan",    icon:"🏆",label:"Bilan",     pro:true},
+    {k:"veto",     icon:"🏥",label:"Véto",      pro:true},
   ];
+
+  const PRO_TABS = new Set(["nutrition","conseils","suivi","bilan","veto"]);
 
   const openDrawer  = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
-  const selectTab   = (k) => { setTab(tab===k?null:k); closeDrawer(); };
+  const selectTab   = (k) => {
+    if (!isPro && k !== null && k !== "programme" && PRO_TABS.has(k)) {
+      setPaywallOpen(true); closeDrawer(); return;
+    }
+    setTab(tab===k?null:k); closeDrawer();
+  };
 
   return (
     <div className="dash">
@@ -1459,23 +1814,57 @@ Réponds UNIQUEMENT en JSON :
             <button key={t.k} className={`dtab${tab===t.k?" active":""}`} onClick={()=>selectTab(t.k)}>
               <span className="dtab-icon">{t.icon}</span>
               {t.label}
+              {t.pro && !isPro && <span className="pro-badge">PRO</span>}
             </button>
           ))}
         </div>
         <div className="drawer-footer">
-          <button className="rb" onClick={onReset}>← Autre chien</button>
+          {user&&(
+            <div className="drawer-account" onClick={()=>{closeDrawer();onAccount&&onAccount();}}>
+              <div className="drawer-account-avatar">{(user.email||"?")[0].toUpperCase()}</div>
+              <div className="drawer-account-info">
+                <div className="drawer-account-name">Mon compte</div>
+                <div className="drawer-account-email">{user.email}</div>
+              </div>
+            </div>
+          )}
+          {onSwitchDog&&(
+            <button className="rb" onClick={()=>{closeDrawer();onSwitchDog();}}>🔀 Changer de chien</button>
+          )}
+          {!deleteConfirm ? (
+            <button className="rb" style={{color:"#DC2626",marginTop:8}} onClick={()=>setDeleteConfirm(true)}>
+              🗑 Supprimer ce profil
+            </button>
+          ) : (
+            <div style={{marginTop:8}}>
+              <div style={{fontSize:12,color:"#92400E",background:"#FEF3C7",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+                Supprimer {profile.name} ? Cette action est irréversible.
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setDeleteConfirm(false)}>Annuler</button>
+                <button className="btn btn-red btn-sm" onClick={()=>{closeDrawer();onDeleteDog&&onDeleteDog();}}>Confirmer</button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
+
+      {/* Add dog banner */}
+      <div className="add-dog-banner" onClick={()=>{closeDrawer();onAddDog&&onAddDog();}}>
+        <span>🐾</span>
+        <span>Ajouter un autre Boule de poils</span>
+      </div>
 
       {/* Content */}
       <div className="dash-layout">
         <div className="dash-main">
           {tab===null&&(
-            <HomeView plan={currentPlan} profile={profile} done={done} currentWeek={currentWeek}/>
+            <HomeView plan={currentPlan} profile={profile} done={done} currentWeek={currentWeek} user={user} userName={userName} onAccount={onAccount}/>
           )}
           {tab==="programme"&&(
             <TabProgramme plan={currentPlan} profile={profile} done={done}
-              onToggle={toggleDone} onHardWeek={handleHardWeek}/>
+              onToggle={toggleDone} onHardWeek={handleHardWeek}
+              isPro={isPro} onPaywall={()=>setPaywallOpen(true)}/>
           )}
           {tab==="nutrition"&&(
             <TabNutrition plan={currentPlan}/>
@@ -1497,6 +1886,156 @@ Réponds UNIQUEMENT en JSON :
           )}
         </div>
       </div>
+
+      {paywallOpen && (
+        <PaywallOverlay dogName={profile.name} onClose={()=>{ setPaywallOpen(false); setTab(null); }}/>
+      )}
+    </div>
+  );
+}
+
+// ─── ACCOUNT SCREEN ──────────────────────────────────────────────────────
+function AccountScreen({ user, dogs, onBack, onAddDog, onSignOut, onDeleteAccount }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [origFirst, setOrigFirst] = useState("");
+  const [origLast, setOrigLast] = useState("");
+
+  useEffect(()=>{
+    if (!user) return;
+    supabase.from("profiles").select("first_name,last_name").eq("id", user.id).single()
+      .then(({data})=>{
+        if (data) {
+          setFirstName(data.first_name||""); setOrigFirst(data.first_name||"");
+          setLastName(data.last_name||""); setOrigLast(data.last_name||"");
+        }
+      });
+  },[user]);
+
+  const hasChanges = firstName !== origFirst || lastName !== origLast;
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    await supabase.from("profiles").upsert({id: user.id, first_name: firstName, last_name: lastName});
+    setSaving(false); setSaved(true); setOrigFirst(firstName); setOrigLast(lastName);
+    setTimeout(()=>setSaved(false), 2000);
+  };
+
+  return (
+    <div className="acct">
+      <div className="acct-header">
+        <button className="acct-back" onClick={onBack}>←</button>
+        <div className="acct-title">Mon compte</div>
+      </div>
+
+
+      {/* Profil */}
+      <div className="acct-section">
+        <div className="acct-section-title">Profil</div>
+        <div className="acct-card">
+          <div className="acct-row">
+            <span className="acct-row-label">Prénom</span>
+            <input className="acct-inp" placeholder="Optionnel" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
+          </div>
+          <div className="acct-row">
+            <span className="acct-row-label">Nom</span>
+            <input className="acct-inp" placeholder="Optionnel" value={lastName} onChange={e=>setLastName(e.target.value)}/>
+          </div>
+          <div className="acct-row">
+            <span className="acct-row-label">Email</span>
+            <span className="acct-row-val muted">{user?.email||"—"}</span>
+          </div>
+        </div>
+        {hasChanges&&(
+          <button className="btn btn-g" onClick={handleSave} disabled={saving} style={{width:"100%",justifyContent:"center",marginTop:10}}>
+            {saving?"Enregistrement...":saved?"✓ Enregistré":"Enregistrer"}
+          </button>
+        )}
+      </div>
+
+      {/* Abonnement */}
+      <div className="acct-section">
+        <div className="acct-section-title">Abonnement</div>
+        <div className="acct-card">
+          <div className="acct-row">
+            <span className="acct-row-label">Plan actuel</span>
+            <span className="acct-row-val">Gratuit</span>
+          </div>
+        </div>
+        <button className="btn btn-g" style={{width:"100%",justifyContent:"center",marginTop:10}}>
+          ✨ Passer à Pro — 5,99€/mois
+        </button>
+      </div>
+
+      {/* Mes chiens */}
+      <div className="acct-section">
+        <div className="acct-section-title">Mes chiens</div>
+        <div className="acct-card">
+          {dogs.map(dog=>(
+            <div key={dog.id} className="acct-row">
+              <span className="acct-row-label">🐕 {dog.profile?.name}</span>
+              <span className="acct-row-val muted">{dog.profile?.breed==="Autre race"?(dog.profile?.custom||dog.profile?.breed):dog.profile?.breed}</span>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-ghost" onClick={onAddDog} style={{width:"100%",justifyContent:"center",marginTop:10}}>
+          ➕ Ajouter un chien
+        </button>
+      </div>
+
+      {/* Déconnexion */}
+      <div className="acct-section">
+        <button className="acct-btn-signout" onClick={onSignOut}>Se déconnecter</button>
+      </div>
+
+      {/* Supprimer le compte */}
+      <div className="acct-delete">
+        {!deleteConfirm ? (
+          <button className="acct-delete-link" onClick={()=>setDeleteConfirm(true)}>
+            Supprimer mon compte et mes données
+          </button>
+        ) : (
+          <div className="acct-delete-confirm">
+            Êtes-vous sûr ? Cette action est irréversible et supprimera tous vos chiens et données.
+            <div style={{display:"flex",gap:8,marginTop:12,justifyContent:"center"}}>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setDeleteConfirm(false)}>Annuler</button>
+              <button className="btn btn-red btn-sm" onClick={onDeleteAccount}>Confirmer la suppression</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── DOG SELECT ──────────────────────────────────────────────────────────
+function DogSelect({ dogs, onSelect, onAdd }) {
+  return (
+    <div className="dog-select">
+      <div className="dog-select-title">Qui coache-t-on aujourd'hui ?</div>
+      <div className="dog-select-sub">Sélectionne un profil pour accéder au dashboard</div>
+      <div className="dog-list">
+        {dogs.map(dog=>(
+          <div key={dog.id} className="dog-card" onClick={()=>onSelect(dog.id)}>
+            <div className="dog-card-avatar">{(dog.profile.name||"?")[0].toUpperCase()}</div>
+            <div className="dog-card-info">
+              <div className="dog-card-name">{dog.profile.name}</div>
+              <div className="dog-card-meta">
+                {dog.profile.breed==="Autre race"?(dog.profile.custom||dog.profile.breed):dog.profile.breed} · {dog.profile.weight} kg
+              </div>
+              {dog.profile.goals?.[0]&&<div className="dog-card-goal">{dog.profile.goals[0]}</div>}
+            </div>
+            <span className="dog-card-arrow">›</span>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-ghost" onClick={onAdd} style={{width:"100%",justifyContent:"center",marginTop:16}}>
+        ➕ Ajouter un chien
+      </button>
     </div>
   );
 }
@@ -1522,39 +2061,174 @@ function Hero({ onStart }) {
 
 // ─── MAIN APP ────────────────────────────────────────────────────────────
 export default function App() {
-  const [scr, setScr] = useState("hero");
-  const [profile, setProfile] = useState(null);
-  const [plan, setPlan] = useState(null);
+  const [scr, setScr] = useState("hero"); // "hero"|"select"|"onboarding"|"dashboard"
+  const [dogs, setDogs] = useState([]);
+  const [activeDogId, setActiveDogId] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const activeDog = dogs.find(d=>d.id===activeDogId)||null;
 
   useEffect(()=>{
-    Promise.all([load("cny_profile"),load("cny_plan")]).then(([p,pl])=>{
-      if(p&&pl){setProfile(p);setPlan(pl);setScr("dashboard");}
-    });
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUser(session.user);
+          // Vérifie les données d'onboarding en attente (retour après confirmation email)
+          const pendingRaw = localStorage.getItem('canymo_pending_dog');
+          if (pendingRaw) {
+            try {
+              const pending = JSON.parse(pendingRaw);
+              const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
+              if (hoursOld < 24) {
+                // Données valides — générer le plan automatiquement
+                setScr("generating");
+                const plan = await generatePlanForDog(pending);
+                localStorage.removeItem('canymo_pending_dog');
+                // Appelle handleComplete directement (pas via setState — inline ici)
+                const id = `dog_${Date.now()}`;
+                const p = {...pending, currentWeek:1};
+                const newDog = {id, profile:p, plan};
+                setDogs([newDog]);
+                setActiveDogId(id);
+                await save("cny_dogs",[newDog]);
+                await save("cny_active",id);
+                try {
+                  await supabase.from("dogs").insert({id, user_id:session.user.id, profile:p, plan});
+                } catch {}
+                setScr("dashboard");
+                return;
+              }
+            } catch {}
+            localStorage.removeItem('canymo_pending_dog');
+          }
+
+          // Pas de pending dog — charge les chiens depuis Supabase
+          const { data: rows } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
+          if (rows && rows.length > 0) {
+            const formatted = rows.map(r => ({id:r.id, profile:r.profile, plan:r.plan}));
+            setDogs(formatted);
+            setActiveDogId(formatted[0].id);
+            setScr("select");
+            return;
+          }
+        }
+      } catch {}
+      // Fallback localStorage
+      const [dogsData, activeId] = await Promise.all([load("cny_dogs"), load("cny_active")]);
+      if (dogsData && dogsData.length > 0) {
+        setDogs(dogsData);
+        setActiveDogId(activeId || dogsData[0].id);
+        setScr("select");
+      }
+    };
+    init();
   },[]);
 
   const handleComplete = async (profileData, planData) => {
+    const id=`dog_${Date.now()}`;
     const p={...profileData,currentWeek:1};
-    setProfile(p); setPlan(planData); setScr("dashboard");
-    await save("cny_profile",p);
-    await save("cny_plan",planData);
+    const newDog={id,profile:p,plan:planData};
+    const newDogs=[...dogs,newDog];
+    setDogs(newDogs);
+    setActiveDogId(id);
+    setScr("dashboard");
+    await save("cny_dogs",newDogs);
+    await save("cny_active",id);
   };
 
-  const handleReset = async () => {
-    setScr("hero"); setProfile(null); setPlan(null);
-    try{await window.storage.delete("cny_profile");await window.storage.delete("cny_plan");}catch{}
+  const handleSelectDog = async (id) => {
+    setActiveDogId(id);
+    setScr("dashboard");
+    await save("cny_active",id);
   };
+
+  const handleAddDog = () => setScr("onboarding");
+
+  const handleSwitchDog = () => setScr("select");
+
+  const handleDeleteDog = async () => {
+    const newDogs=dogs.filter(d=>d.id!==activeDogId);
+    setDogs(newDogs);
+    await save("cny_dogs",newDogs);
+    if(newDogs.length===0){
+      setActiveDogId(null);
+      setScr("hero");
+    } else {
+      setActiveDogId(null);
+      setScr("select");
+    }
+  };
+
+  const handlePlanUpdate = async (newPlan) => {
+    const newDogs=dogs.map(d=>d.id===activeDogId?{...d,plan:newPlan}:d);
+    setDogs(newDogs);
+    await save("cny_dogs",newDogs);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null); setDogs([]); setActiveDogId(null);
+    localStorage.removeItem('canymo_pending_dog');
+    await save("cny_dogs",[]); await save("cny_active",null);
+    setScr("hero");
+  };
+
+  const handleDeleteAccount = async () => {
+    // Delete all dog data from Supabase
+    if (user) {
+      try { await supabase.from("dogs").delete().eq("user_id", user.id); } catch {}
+      try { await supabase.from("profiles").delete().eq("id", user.id); } catch {}
+    }
+    await handleSignOut();
+  };
+
+  const handleAccount = () => setScr("account");
 
   return (
     <>
       <style>{CSS}</style>
       <div className="app">
-        <nav className="nav">
-          <div className="logo">Can<span>ymo</span></div>
-          <div className="badge">BETA</div>
-        </nav>
+        {scr!=="dashboard"&&scr!=="generating"&&scr!=="account"&&(
+          <nav className="nav">
+            <div className="logo">Can<span>ymo</span></div>
+            <div className="badge">BETA</div>
+          </nav>
+        )}
         {scr==="hero"&&<Hero onStart={()=>setScr("onboarding")}/>}
+        {scr==="select"&&<DogSelect dogs={dogs} onSelect={handleSelectDog} onAdd={handleAddDog}/>}
         {scr==="onboarding"&&<Onboarding onComplete={handleComplete}/>}
-        {scr==="dashboard"&&profile&&plan&&<Dashboard profile={profile} plan={plan} onReset={handleReset}/>}
+        {scr==="generating"&&(
+          <div className="ld">
+            <div className="ld-spinner"/>
+            <div className="lt">Création de votre programme en cours...</div>
+            <p className="ls">Bienvenue ! On génère le plan personnalisé de votre chien.</p>
+            <div className="ld-countdown">Environ 30 secondes...</div>
+          </div>
+        )}
+        {scr==="account"&&(
+          <AccountScreen
+            user={user}
+            dogs={dogs}
+            onBack={()=>setScr(activeDog?"dashboard":"select")}
+            onAddDog={()=>setScr("onboarding")}
+            onSignOut={handleSignOut}
+            onDeleteAccount={handleDeleteAccount}
+          />
+        )}
+        {scr==="dashboard"&&activeDog&&(
+          <Dashboard
+            dogId={activeDog.id}
+            profile={activeDog.profile}
+            plan={activeDog.plan}
+            onSwitchDog={handleSwitchDog}
+            onDeleteDog={handleDeleteDog}
+            onAddDog={handleAddDog}
+            onPlanUpdate={handlePlanUpdate}
+            user={user}
+            onAccount={handleAccount}
+          />
+        )}
       </div>
     </>
   );
