@@ -1186,7 +1186,7 @@ Généré par Canymo — Programme bien-être IA pour chiens
 }
 
 // ─── ONBOARDING ──────────────────────────────────────────────────────────
-function Onboarding({ onComplete }) {
+function Onboarding({ onComplete, existingDogs = [], user = null }) {
   const [step, setStep] = useState(1);
   const [err, setErr] = useState("");
   const [loadMsg, setLoadMsg] = useState("");
@@ -1200,9 +1200,18 @@ function Onboarding({ onComplete }) {
   const [authOk, setAuthOk] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const isSecondDog = existingDogs.length > 0 && !!user;
+  const ownerData = existingDogs[0]?.profile || {};
+  const totalOBSteps = isSecondDog ? 8 : 9;
+  const displayStep = s => isSecondDog && s >= 6 ? s - 1 : s;
+
   const [d, setD] = useState({
     name:"",breed:"",custom:"",age:3,gender:null,neutered:true,reproStatus:"none",
-    weight:20,city:"",housing:"",waterAccess:null,waterActivities:null,
+    weight:20,
+    city: ownerData.city || "",
+    housing: ownerData.housing || "",
+    waterAccess: ownerData.waterAccess || null,
+    waterActivities: ownerData.waterActivities || null,
     activity:"",time:30,goals:[],food:"",ration:"",pathologies:""
   });
 
@@ -1312,7 +1321,7 @@ function Onboarding({ onComplete }) {
       </div>
 
       {step===1&&<>
-        <div className="slbl">Étape 1 sur 9</div>
+        <div className="slbl">Étape 1 sur {totalOBSteps}</div>
         <div className="stitle">Comment s'appelle ton chien ?</div>
         <div className="ssub">On va créer un programme 100% personnalisé pour lui.</div>
         <div className="fg">
@@ -1327,7 +1336,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===2&&<>
-        <div className="slbl">Étape 2 sur 9</div>
+        <div className="slbl">Étape 2 sur {totalOBSteps}</div>
         <div className="stitle">La race de {d.name} ?</div>
         <div className="ssub">Chaque race a des besoins différents. C'est là que la magie opère.</div>
         <div className="fg">
@@ -1351,7 +1360,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===3&&<>
-        <div className="slbl">Étape 3 sur 9</div>
+        <div className="slbl">Étape 3 sur {totalOBSteps}</div>
         <div className="stitle">Quel âge a {d.name} ?</div>
         <div className="ssub">L'âge influence l'intensité et les précautions.</div>
         <div className="rrow"><span className="flbl">Âge</span><span className="rval">{d.age} {d.age<=1?"an":"ans"}</span></div>
@@ -1394,7 +1403,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===4&&<>
-        <div className="slbl">Étape 4 sur 9</div>
+        <div className="slbl">Étape 4 sur {totalOBSteps}</div>
         <div className="stitle">Le poids de {d.name} ?</div>
         <div className="ssub">Poids idéal estimé pour {breedName} : {bi.ideal[0]}–{bi.ideal[1]} kg.</div>
         <div className="rrow"><span className="flbl">Poids actuel</span><span className="rval">{d.weight} kg</span></div>
@@ -1402,12 +1411,12 @@ function Onboarding({ onComplete }) {
         <div className="wi">{(()=>{const diff=d.weight-ideal;if(diff>2)return `⚠️ ${d.name} est en surpoids de +${diff.toFixed(1)} kg — programme perte de poids recommandé`;if(diff<-2)return `📈 ${d.name} est en sous-poids de ${Math.abs(diff).toFixed(1)} kg — programme prise de poids recommandé`;return `✅ ${d.name} est dans la fourchette idéale pour sa race`;})()}</div>
         <div className="snav">
           <button className="btn btn-ghost" onClick={()=>go(3)}>← Retour</button>
-          <button className="btn btn-g" onClick={()=>go(5)}>Continuer →</button>
+          <button className="btn btn-g" onClick={()=>go(isSecondDog?6:5)}>Continuer →</button>
         </div>
       </>}
 
-      {step===5&&<>
-        <div className="slbl">Étape 5 sur 9</div>
+      {!isSecondDog&&step===5&&<>
+        <div className="slbl">Étape 5 sur {totalOBSteps}</div>
         <div className="stitle">Où vit {d.name} ?</div>
         <div className="ssub">La ville permet d'adapter les sorties à la météo.</div>
         <div className="fg">
@@ -1452,7 +1461,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===6&&<>
-        <div className="slbl">Étape 6 sur 9</div>
+        <div className="slbl">Étape {displayStep(6)} sur {totalOBSteps}</div>
         <div className="stitle">Niveau d'activité de {d.name}</div>
         <div className="ssub">Sois honnête — pour un programme réaliste et progressif.</div>
         {ACTS.map(a=>(
@@ -1471,13 +1480,13 @@ function Onboarding({ onComplete }) {
           <div className="rsmall"><span>10 min</span><span>2h+</span></div>
         </div>
         <div className="snav">
-          <button className="btn btn-ghost" onClick={()=>go(5)}>← Retour</button>
+          <button className="btn btn-ghost" onClick={()=>go(isSecondDog?4:5)}>← Retour</button>
           <button className="btn btn-g" onClick={()=>go(7)} disabled={!d.activity}>Continuer →</button>
         </div>
       </>}
 
       {step===7&&<>
-        <div className="slbl">Étape 7 sur 9</div>
+        <div className="slbl">Étape {displayStep(7)} sur {totalOBSteps}</div>
         <div className="stitle">Objectifs pour {d.name}</div>
         <div className="ssub">Le programme sera adapté en conséquence.</div>
         <div className="mh">✓ Tu peux sélectionner plusieurs objectifs</div>
@@ -1509,7 +1518,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===8&&<>
-        <div className="slbl">Étape 8 sur 9</div>
+        <div className="slbl">Étape {displayStep(8)} sur {totalOBSteps}</div>
         <div className="stitle">Votre chien a-t-il des pathologies particulières ?</div>
         <div className="ssub">Problèmes articulaires, cardiaques, respiratoires, allergies, etc.</div>
         <div className="fg">
@@ -1533,7 +1542,7 @@ function Onboarding({ onComplete }) {
       </>}
 
       {step===9&&<>
-        <div className="slbl">Étape 9 sur 9</div>
+        <div className="slbl">Étape {displayStep(9)} sur {totalOBSteps}</div>
         <div className="stitle">Nutrition actuelle</div>
         <div className="ssub">Optionnel mais recommandé pour des conseils précis.</div>
         <div className="fg">
@@ -1544,12 +1553,16 @@ function Onboarding({ onComplete }) {
           <label className="flbl">Ration actuelle (g / jour)</label>
           <input className="inp" type="number" placeholder="Ex: 300" value={d.ration} onChange={e=>upd({ration:e.target.value})}/>
         </div>
-        <div className="an">🤖 <span>L'IA va générer le programme de {d.name} à {d.city}. ~15 secondes.</span></div>
+        <div className="an">🤖 <span>L'IA va générer le programme de {d.name}{d.city?` à ${d.city}`:""}. ~15 secondes.</span></div>
         <div className="snav">
           <button className="btn btn-ghost" onClick={()=>go(8)}>← Retour</button>
           <button className="btn btn-g" onClick={()=>{
-            localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
-            go(10);
+            if (isSecondDog) {
+              generate();
+            } else {
+              localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
+              go(10);
+            }
           }}>Continuer →</button>
         </div>
       </>}
@@ -2085,18 +2098,21 @@ export default function App() {
                 setScr("generating");
                 const plan = await generatePlanForDog(pending);
                 localStorage.removeItem('canymo_pending_dog');
-                // Appelle handleComplete directement (pas via setState — inline ici)
+                // Load existing dogs first so we don't overwrite them
+                const { data: existingRows } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
+                const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r.profile,plan:r.plan})) : [];
                 const id = `dog_${Date.now()}`;
                 const p = {...pending, currentWeek:1};
                 const newDog = {id, profile:p, plan};
-                setDogs([newDog]);
+                const allDogs = [...existingDogs, newDog];
+                setDogs(allDogs);
                 setActiveDogId(id);
-                await save("cny_dogs",[newDog]);
-                await save("cny_active",id);
+                await save("cny_dogs", allDogs);
+                await save("cny_active", id);
                 try {
                   await supabase.from("dogs").insert({id, user_id:session.user.id, profile:p, plan});
                 } catch {}
-                setScr("dashboard");
+                setScr(allDogs.length > 1 ? "select" : "dashboard");
                 return;
               }
             } catch {}
@@ -2135,6 +2151,9 @@ export default function App() {
     setScr("dashboard");
     await save("cny_dogs",newDogs);
     await save("cny_active",id);
+    if (user) {
+      try { await supabase.from("dogs").insert({id, user_id:user.id, profile:p, plan:planData}); } catch {}
+    }
   };
 
   const handleSelectDog = async (id) => {
@@ -2197,7 +2216,7 @@ export default function App() {
         )}
         {scr==="hero"&&<Hero onStart={()=>setScr("onboarding")}/>}
         {scr==="select"&&<DogSelect dogs={dogs} onSelect={handleSelectDog} onAdd={handleAddDog}/>}
-        {scr==="onboarding"&&<Onboarding onComplete={handleComplete}/>}
+        {scr==="onboarding"&&<Onboarding onComplete={handleComplete} existingDogs={dogs} user={user}/>}
         {scr==="generating"&&(
           <div className="ld">
             <div className="ld-spinner"/>
