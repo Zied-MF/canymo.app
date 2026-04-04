@@ -1219,7 +1219,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
   const [authLoading, setAuthLoading] = useState(false);
   const isSecondDog = existingDogs.length > 0 && !!user;
   const ownerData = existingDogs[0]?.profile || {};
-  const totalOBSteps = isSecondDog ? 8 : 9;
+  const totalOBSteps = isSecondDog ? 8 : 10;
   const displayStep = s => isSecondDog && s >= 6 ? s - 1 : s;
 
   const [d, setD] = useState({
@@ -1585,6 +1585,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
       </>}
 
       {step===10&&<>
+        <div className="slbl">Étape 10 sur 10</div>
         <div className="stitle">Dernière étape avant le programme de {d.name} !</div>
         <div className="ssub">Créez votre compte pour accéder à votre programme depuis n'importe quel appareil.</div>
         <div className="auth-tabs">
