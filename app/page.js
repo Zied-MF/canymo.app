@@ -2391,6 +2391,7 @@ export default function App() {
         console.log('[Init] Session:', session ? `user=${session.user.email}` : 'null');
         if (session) {
           setUser(session.user);
+          console.log('[Init] Email confirmé:', session.user.email_confirmed_at ? 'oui' : 'non');
           // Vérifie les données d'onboarding en attente (retour après confirmation email)
           // Priorité : localStorage (même appareil) → métadonnées Supabase (cross-device)
           const localRaw = localStorage.getItem('canymo_pending_dog');
@@ -2462,15 +2463,19 @@ export default function App() {
   const handleComplete = async (profileData, planData) => {
     const p={...profileData,currentWeek:1};
     let id = `local_${Date.now()}`;
-    if (user) {
-      try {
-        const row = dogToSupabaseRow(user.id, p, planData);
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log('[handleComplete] Session courante:', currentSession ? `user=${currentSession.user.id}` : 'null');
+      if (currentSession?.user) {
+        const row = dogToSupabaseRow(currentSession.user.id, p, planData);
         console.log('[handleComplete] Insertion Supabase:', JSON.stringify(row, null, 2));
         const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
         if (insertErr) console.error('[handleComplete] Erreur insert dog:', insertErr.message);
         else { id = inserted.id; console.log('[handleComplete] Chien sauvegardé dans Supabase ✓ id:', id); }
-      } catch(e) { console.error('[handleComplete] Exception:', e); }
-    }
+      } else {
+        console.log('[handleComplete] Pas de session active — chien sauvegardé en local uniquement');
+      }
+    } catch(e) { console.error('[handleComplete] Exception:', e); }
     const newDog={id,profile:{...p,id},plan:planData};
     const newDogs=[...dogs,newDog];
     setDogs(newDogs);
