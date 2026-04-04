@@ -1,0 +1,24 @@
+{
+  "name": "Canymo",
+  "short_name": "Canymo",
+  "description": "Coaching bien-être pour chiens - Programmes personnalisés",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFAF4",
+  "theme_color": "#1C3D2A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
