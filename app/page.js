@@ -2234,8 +2234,7 @@ function LoginScreen({ onBack, onSignIn }) {
       {err && <div className="login-err">{err}</div>}
       {resetSent && <div className="an">📧 <span>Email de réinitialisation envoyé !</span></div>}
 
-      {!showReset ? (
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
           <div className="fg">
             <label className="flbl">Email</label>
             <input className="inp" type="email" placeholder="ton@email.com" value={email}
@@ -2251,7 +2250,6 @@ function LoginScreen({ onBack, onSignIn }) {
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
-      ) : null}
 
       <div className="login-sep">
         <div className="login-sep-line"/>
@@ -2336,10 +2334,10 @@ export default function App() {
   const activeDog = dogs.find(d=>d.id===activeDogId)||null;
 
   const loadUserDogs = useCallback(async (userId) => {
-    const { data: rows, error } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", userId);
+    const { data: rows, error } = await supabase.from("dogs").select("*").eq("user_id", userId);
     console.log('[loadUserDogs]', rows?.length ?? 0, 'chiens', error ? `erreur: ${error.message}` : 'ok');
     if (rows && rows.length > 0) {
-      const formatted = rows.map(r => ({id:r.id, profile:r.profile, plan:r.plan}));
+      const formatted = rows.map(r => ({id:r.id, profile:r, plan:r.current_plan}));
       setDogs(formatted);
       const activeId = await load("cny_active");
       const preferred = formatted.find(d=>d.id===activeId) ? activeId : formatted[0].id;
@@ -2391,9 +2389,9 @@ export default function App() {
                 // Efface aussi les métadonnées cross-device
                 try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
                 // Load existing dogs first so we don't overwrite them
-                const { data: existingRows, error: existingErr } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
+                const { data: existingRows, error: existingErr } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
                 console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
-                const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r.profile,plan:r.plan})) : [];
+                const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r,plan:r.current_plan})) : [];
                 const id = `dog_${Date.now()}`;
                 const p = {...pending, currentWeek:1};
                 const newDog = {id, profile:p, plan};
