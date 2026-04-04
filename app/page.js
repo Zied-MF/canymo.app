@@ -2451,24 +2451,48 @@ export default function App() {
               console.log('[Init] pending_dog âge:', hoursOld.toFixed(1), 'h, chien:', pending.name);
               if (hoursOld < 24) {
                 setScr("generating");
-                const plan = await generatePlanForDog(pending);
-                console.log('[Init] Plan généré pour:', pending.name);
+                let plan = null;
+                try {
+                  plan = await generatePlanForDog(pending);
+                  console.log('[Init] Plan généré pour:', pending.name);
+                } catch (genErr) {
+                  console.error('[Init] Erreur génération plan:', genErr);
+                  // Génération échouée → nettoyer et aller au welcome pour éviter boucle infinie
+                  localStorage.removeItem('canymo_pending_dog');
+                  try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
+                  setScr("welcome");
+                  return;
+                }
+                // Nettoyer AVANT de sauvegarder pour éviter toute boucle
                 localStorage.removeItem('canymo_pending_dog');
                 try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
                 const userId = session.user.id;
                 const p = {...pending, currentWeek:1};
-                const { error: profErr } = await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' });
-                if (profErr) console.error('[Init] Erreur upsert profile:', profErr.message);
-                const row = dogToSupabaseRow(userId, p, plan);
-                const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
-                if (insertErr) console.error('[Init] Erreur insert dog:', insertErr.message);
-                else console.log('[Init] Chien sauvegardé ✓ id:', inserted.id);
-                const id = inserted?.id || `local_${Date.now()}`;
+                const id = `local_${Date.now()}`;
                 const newDog = {id, profile:{...p, id}, plan};
-                setDogs([newDog]);
-                setActiveDogId(id);
+                // Sauvegarder en localStorage EN PREMIER (toujours fiable)
                 await save("cny_dogs", [newDog]);
                 await save("cny_active", id);
+                // Puis tenter Supabase (peut échouer sans casser l'app)
+                try {
+                  await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' });
+                  const row = dogToSupabaseRow(userId, p, plan);
+                  const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
+                  if (insertErr) console.error('[Init] Erreur insert Supabase (local sauvegardé):', insertErr.message);
+                  else {
+                    console.log('[Init] Chien sauvegardé Supabase ✓ id:', inserted.id);
+                    // Mettre à jour avec l'ID Supabase
+                    const supabaseDog = {id: inserted.id, profile:{...p, id: inserted.id}, plan};
+                    await save("cny_dogs", [supabaseDog]);
+                    await save("cny_active", inserted.id);
+                    setDogs([supabaseDog]);
+                    setActiveDogId(inserted.id);
+                    setScr("dashboard");
+                    return;
+                  }
+                } catch (e) { console.error('[Init] Exception Supabase:', e); }
+                setDogs([newDog]);
+                setActiveDogId(id);
                 setScr("dashboard");
                 return;
               }
