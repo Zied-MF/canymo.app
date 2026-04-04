@@ -2464,8 +2464,8 @@ export default function App() {
             localStorage.removeItem('canymo_pending_dog');
           }
 
-          // 4. Aucun chien, aucun pending → onboarding
-          setScr("onboarding");
+          // 4. Aucun chien, aucun pending → écran d'accueil
+          setScr("welcome");
           return;
         }
       } catch (e) { console.error('[Init] Exception globale:', e); }
