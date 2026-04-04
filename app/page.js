@@ -2416,12 +2416,16 @@ export default function App() {
                 console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
                 const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r,plan:r.current_plan})) : [];
                 const p = {...pending, currentWeek:1};
+                const userId = session.user.id;
+                console.log('[Init] user_id utilisé pour insert:', userId);
                 // Ensure profile exists (FK constraint: dogs.user_id → profiles.id)
-                const { error: profErr } = await supabase.from("profiles").upsert({ id: session.user.id }, { onConflict: 'id' });
-                if (profErr) console.error('[Init] Erreur upsert profile:', profErr.message);
-                else console.log('[Init] Profile assuré ✓');
-                const row = dogToSupabaseRow(session.user.id, p, plan);
-                console.log('[Init] Insertion Supabase:', JSON.stringify(row, null, 2));
+                const { data: profData, error: profErr } = await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' }).select();
+                console.log('[Init] Profile upsert result → data:', profData, 'error:', profErr?.message ?? null);
+                // Verify profile actually exists
+                const { data: profCheck } = await supabase.from("profiles").select("id").eq("id", userId).single();
+                console.log('[Init] Profile existe dans DB:', profCheck ? 'OUI' : 'NON');
+                const row = dogToSupabaseRow(userId, p, plan);
+                console.log('[Init] Insertion Supabase row:', JSON.stringify(row, null, 2));
                 const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
                 if (insertErr) { console.error('[Init] Erreur insert dog:', insertErr.message); }
                 else { console.log('[Init] Chien sauvegardé dans Supabase ✓ id:', inserted.id); }
