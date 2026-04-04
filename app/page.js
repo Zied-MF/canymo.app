@@ -2416,6 +2416,10 @@ export default function App() {
                 console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
                 const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r,plan:r.current_plan})) : [];
                 const p = {...pending, currentWeek:1};
+                // Ensure profile exists (FK constraint: dogs.user_id → profiles.id)
+                const { error: profErr } = await supabase.from("profiles").upsert({ id: session.user.id }, { onConflict: 'id' });
+                if (profErr) console.error('[Init] Erreur upsert profile:', profErr.message);
+                else console.log('[Init] Profile assuré ✓');
                 const row = dogToSupabaseRow(session.user.id, p, plan);
                 console.log('[Init] Insertion Supabase:', JSON.stringify(row, null, 2));
                 const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
@@ -2467,6 +2471,10 @@ export default function App() {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('[handleComplete] Session courante:', currentSession ? `user=${currentSession.user.id}` : 'null');
       if (currentSession?.user) {
+        // Ensure profile exists (FK constraint: dogs.user_id → profiles.id)
+        const { error: profErr } = await supabase.from("profiles").upsert({ id: currentSession.user.id }, { onConflict: 'id' });
+        if (profErr) console.error('[handleComplete] Erreur upsert profile:', profErr.message);
+        else console.log('[handleComplete] Profile assuré ✓');
         const row = dogToSupabaseRow(currentSession.user.id, p, planData);
         console.log('[handleComplete] Insertion Supabase:', JSON.stringify(row, null, 2));
         const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
