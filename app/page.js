@@ -2427,7 +2427,19 @@ export default function App() {
             return;
           }
 
-          // 3. Aucun chien en base (et pas d'erreur) → vérifier pending_dog
+          // 3. Aucun chien en Supabase — vérifier si cny_dogs localStorage a déjà un plan
+          const [localDogs, localActiveId] = await Promise.all([load("cny_dogs"), load("cny_active")]);
+          if (localDogs && localDogs.length > 0 && localDogs.some(d => d.plan)) {
+            console.log('[Init] Chiens trouvés en localStorage avec plan → dashboard');
+            localStorage.removeItem('canymo_pending_dog');
+            setDogs(localDogs);
+            const preferred = localDogs.find(d=>d.id===localActiveId) ? localActiveId : localDogs[0].id;
+            setActiveDogId(preferred);
+            setScr(localDogs.length > 1 ? "select" : "dashboard");
+            return;
+          }
+
+          // 4. Rien en local non plus → vérifier pending_dog (premier onboarding après inscription)
           const localRaw = localStorage.getItem('canymo_pending_dog');
           const metaRaw = session.user.user_metadata?.pending_dog;
           const pendingRaw = localRaw || metaRaw || null;
