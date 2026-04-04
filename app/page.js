@@ -1114,6 +1114,9 @@ function TabBilan({ profile, plan, recaps, onGenerateBilan, doneHistory, weights
 // ─── TAB: VÉTO ──────────────────────────────────────────────────────────
 function TabVeto({ profile, plan, weights }) {
   const [copied, setCopied] = useState(false);
+  const [vetEmail, setVetEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState(null); // {ok: bool, msg: string}
   const bi = BREEDS[profile.breed]||BREEDS["Autre race"];
   const ideal = Math.round((bi.ideal[0]+bi.ideal[1])/2);
   const lastWeight = weights[weights.length-1];
@@ -1155,6 +1158,47 @@ ${plan?.breed_tips?.join("\n• ")||"—"}
 Généré par Canymo — Programme bien-être IA pour chiens
 `.trim();
 
+  const handleSendToVet = async () => {
+    if (!vetEmail.trim()) return;
+    setSending(true);
+    setSendResult(null);
+    const reportHtml = `
+      <h2 style="color:#1C3D2A">Profil de ${profile.name}</h2>
+      <p><strong>Race :</strong> ${breedName}</p>
+      <p><strong>Âge :</strong> ${profile.age} ans</p>
+      <p><strong>Poids actuel :</strong> ${lastWeight?.weight||profile.weight} kg</p>
+      <p><strong>Poids idéal estimé :</strong> ${ideal} kg</p>
+      <p><strong>Castré/Stérilisé :</strong> ${profile.neutered?"Oui":"Non"}</p>
+      <p><strong>Pathologies :</strong> ${profile.pathologies||"Aucune signalée"}</p>
+      <p><strong>Objectifs :</strong> ${(profile.goals||[]).join(", ")||"—"}</p>
+      <h2 style="color:#1C3D2A">Programme en cours</h2>
+      <p><strong>Semaine :</strong> ${profile.currentWeek||1}</p>
+      <p><strong>Objectif hebdo :</strong> ${plan?.weekly_goal||"—"}</p>
+      <h2 style="color:#1C3D2A">Programme d'exercice</h2>
+      <ul>${plan?.weekly_plan?.map(d=>`<li><strong>${d.day} :</strong> ${d.activity} — ${d.duration_min} min</li>`).join("")||"<li>—</li>"}</ul>
+      <h2 style="color:#1C3D2A">Plan nutritionnel</h2>
+      <p><strong>Calories/jour :</strong> ${plan?.nutrition?.daily_calories||"—"} kcal</p>
+      <p><strong>Ration recommandée :</strong> ${plan?.nutrition?.recommended_ration_g||"—"} g/jour</p>
+      <p><strong>Eau :</strong> ${plan?.nutrition?.water_ml||"—"} ml/jour</p>
+    `;
+    try {
+      const res = await fetch("/api/send-report", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ vetEmail, dogName: profile.name, reportHtml })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSendResult({ok:true, msg:`✓ Rapport envoyé à ${vetEmail}`});
+        setVetEmail("");
+      } else {
+        setSendResult({ok:false, msg:`Erreur : ${data.error}`});
+      }
+    } catch {
+      setSendResult({ok:false, msg:"Erreur lors de l'envoi"});
+    }
+    setSending(false);
+  };
+
   const handleCopy = () => {
     navigator.clipboard?.writeText(vetReport).then(()=>{
       setCopied(true);
@@ -1191,12 +1235,24 @@ Généré par Canymo — Programme bien-être IA pour chiens
       </div>
 
       <div className="vet-card">
-        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:8}}>📧 Envoyer par email</div>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:8}}>📧 Envoyer par email au vétérinaire</div>
         <div className="wt-add">
-          <input className="wt-inp" type="email" placeholder="email@veterinaire.fr"/>
-          <button className="btn btn-g btn-sm">Envoyer</button>
+          <input className="wt-inp" type="email" placeholder="email@veterinaire.fr"
+            value={vetEmail} onChange={e=>{setVetEmail(e.target.value);setSendResult(null);}}
+            onKeyDown={e=>e.key==="Enter"&&handleSendToVet()}/>
+          <button className="btn btn-g btn-sm" onClick={handleSendToVet}
+            disabled={sending||!vetEmail.trim()}>
+            {sending?"⏳ Envoi...":"Envoyer"}
+          </button>
         </div>
-        <div className="hint" style={{marginTop:6}}>Le rapport sera envoyé directement à votre vétérinaire.</div>
+        {sendResult&&(
+          <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,fontSize:13,fontWeight:600,
+            background:sendResult.ok?"#D1FAE5":"#FEE2E2",
+            color:sendResult.ok?"#065F46":"#DC2626"}}>
+            {sendResult.msg}
+          </div>
+        )}
+        {!sendResult&&<div className="hint" style={{marginTop:6}}>Le rapport sera envoyé directement à votre vétérinaire.</div>}
       </div>
     </div>
   );
