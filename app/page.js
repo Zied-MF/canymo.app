@@ -221,6 +221,36 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .add-dog-banner{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #E5E7EB;padding:14px 22px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#2D6444;box-shadow:0 -2px 10px rgba(0,0,0,.06);transition:background .2s;z-index:100}
 .add-dog-banner:hover{background:#F0FDF4}
 
+/* LOADING SCREEN */
+.splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#FFFAF4;gap:18px}
+.splash-logo{font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:#1C3D2A}
+.splash-logo em{color:#E8820C;font-style:italic}
+.splash-sub{font-size:14px;color:#9A8070}
+
+/* WELCOME SCREEN */
+.welcome{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:#FFFAF4;text-align:center}
+.welcome-icon{font-size:64px;margin-bottom:16px}
+.welcome-title{font-family:'Fraunces',serif;font-size:30px;font-weight:900;color:#1C3D2A;margin-bottom:10px;line-height:1.15}
+.welcome-sub{font-size:16px;color:#6B7280;margin-bottom:40px;max-width:300px;line-height:1.6}
+.welcome-btns{width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px}
+.welcome-btn-primary{background:#2D6444;color:#fff;border:none;border-radius:14px;padding:17px 24px;font-size:16px;font-weight:700;cursor:pointer;width:100%;transition:background .2s}
+.welcome-btn-primary:hover{background:#1C3D2A}
+.welcome-btn-secondary{background:transparent;color:#2D6444;border:2px solid #2D6444;border-radius:14px;padding:15px 24px;font-size:16px;font-weight:600;cursor:pointer;width:100%;transition:all .2s}
+.welcome-btn-secondary:hover{background:#E8F2EC}
+
+/* LOGIN SCREEN */
+.login{min-height:100vh;background:#FFFAF4;padding:20px 22px 40px;max-width:480px;margin:0 auto}
+.login-back{background:none;border:none;font-size:22px;cursor:pointer;color:#1C3D2A;padding:0;margin-bottom:24px;display:block;line-height:1}
+.login-title{font-family:'Fraunces',serif;font-size:26px;font-weight:900;color:#1C3D2A;margin-bottom:28px}
+.login-err{background:#FEE2E2;color:#DC2626;border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:14px}
+.login-sep{display:flex;align-items:center;gap:10px;margin:20px 0}
+.login-sep-line{flex:1;height:1px;background:#E5E7EB}
+.login-sep-txt{font-size:13px;color:#9A8070}
+.login-google{width:100%;background:#fff;color:#1A1209;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s}
+.login-google:hover{background:#F9FAFB}
+.login-forgot{text-align:center;margin-top:20px}
+.login-forgot button{background:none;border:none;color:#2D6444;cursor:pointer;font-size:14px;text-decoration:underline}
+
 /* INSTALL BANNER */
 .install-banner{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:12px 12px 0 0;padding:16px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,.12);z-index:150}
 .install-icon{font-size:26px;flex-shrink:0}
@@ -2138,21 +2168,105 @@ function DogSelect({ dogs, onSelect, onAdd }) {
   );
 }
 
-// ─── HERO ────────────────────────────────────────────────────────────────
-function Hero({ onStart }) {
+// ─── WELCOME SCREEN ──────────────────────────────────────────────────────
+function WelcomeScreen({ onStart, onLogin }) {
   return (
-    <div className="hero">
-      <div className="pill">Programme bien-être IA pour chiens</div>
-      <h1>Ton chien mérite<br/>d'être <em>au top</em>.</h1>
-      <p className="sub">Programme personnalisé exercice + nutrition, généré par IA en 3 min. Adapté à la race, l'âge et le mode de vie.</p>
-      <div className="stats">
+    <div className="welcome">
+      <div className="welcome-icon">🐾</div>
+      <div className="welcome-title">Bienvenue sur<br/>Can<em style={{color:"#E8820C",fontStyle:"italic"}}>ymo</em></div>
+      <div className="welcome-sub">Le coaching bien-être personnalisé pour ton chien</div>
+      <div className="welcome-btns">
+        <button className="welcome-btn-primary" onClick={onStart}>
+          Créer le programme de mon chien 🐾
+        </button>
+        <button className="welcome-btn-secondary" onClick={onLogin}>
+          J'ai déjà un compte
+        </button>
+      </div>
+      <div className="stats" style={{marginTop:40}}>
         <div><div className="sn">59%</div><div className="sl">des chiens en surpoids</div></div>
         <div><div className="sn">200+</div><div className="sl">races supportées</div></div>
         <div><div className="sn">2,5 ans</div><div className="sl">de vie gagnés</div></div>
       </div>
-      <button className="btn btn-g" onClick={onStart} style={{fontSize:15,padding:"14px 34px"}}>
-        Créer le programme de mon chien 🐾
+    </div>
+  );
+}
+
+// ─── LOGIN SCREEN ─────────────────────────────────────────────────────────
+function LoginScreen({ onBack, onSignIn }) {
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    if (!email || !pwd) { setErr("Email et mot de passe requis."); return; }
+    setLoading(true); setErr("");
+    console.log('[LoginScreen] Tentative connexion:', email);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
+    console.log('[LoginScreen] Résultat:', { user: data?.user?.email, error: error?.message });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    onSignIn(data.user);
+  };
+
+  const handleGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : 'https://app.canymo.com' }
+    });
+  };
+
+  const handleReset = async () => {
+    if (!email) { setErr("Saisis ton email d'abord."); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) { setErr(error.message); return; }
+    setResetSent(true);
+  };
+
+  return (
+    <div className="login">
+      <button className="login-back" onClick={onBack}>←</button>
+      <div className="login-title">Content de te revoir ! 🐕</div>
+
+      {err && <div className="login-err">{err}</div>}
+      {resetSent && <div className="an">📧 <span>Email de réinitialisation envoyé !</span></div>}
+
+      {!showReset ? (
+        <form onSubmit={handleSubmit}>
+          <div className="fg">
+            <label className="flbl">Email</label>
+            <input className="inp" type="email" placeholder="ton@email.com" value={email}
+              onChange={e=>{setEmail(e.target.value);setErr("");}} autoComplete="email"/>
+          </div>
+          <div className="fg">
+            <label className="flbl">Mot de passe</label>
+            <input className="inp" type="password" placeholder="Ton mot de passe" value={pwd}
+              onChange={e=>{setPwd(e.target.value);setErr("");}} autoComplete="current-password"/>
+          </div>
+          <button type="submit" className="welcome-btn-primary" disabled={loading}
+            style={{marginTop:8,borderRadius:12,padding:"15px"}}>
+            {loading ? "Connexion..." : "Se connecter"}
+          </button>
+        </form>
+      ) : null}
+
+      <div className="login-sep">
+        <div className="login-sep-line"/>
+        <div className="login-sep-txt">ou</div>
+        <div className="login-sep-line"/>
+      </div>
+
+      <button className="login-google" onClick={handleGoogle}>
+        <span style={{fontSize:18}}>G</span>
+        Continuer avec Google
       </button>
+
+      <div className="login-forgot">
+        <button onClick={handleReset}>Mot de passe oublié ?</button>
+      </div>
     </div>
   );
 }
@@ -2214,7 +2328,7 @@ function InstallBanner() {
 
 // ─── MAIN APP ────────────────────────────────────────────────────────────
 export default function App() {
-  const [scr, setScr] = useState("hero"); // "hero"|"select"|"onboarding"|"dashboard"
+  const [scr, setScr] = useState("loading"); // "loading"|"welcome"|"login"|"select"|"onboarding"|"dashboard"|"account"
   const [dogs, setDogs] = useState([]);
   const [activeDogId, setActiveDogId] = useState(null);
   const [user, setUser] = useState(null);
@@ -2241,7 +2355,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[Auth event]', event, session?.user?.email ?? 'no session');
       if (event === 'SIGNED_OUT') {
-        setUser(null); setDogs([]); setActiveDogId(null); setScr("hero");
+        setUser(null); setDogs([]); setActiveDogId(null); setScr("welcome");
       }
       if (event === 'TOKEN_REFRESHED') {
         console.log('[Auth] Token renouvelé automatiquement');
@@ -2308,10 +2422,19 @@ export default function App() {
         setDogs(dogsData);
         setActiveDogId(activeId || dogsData[0].id);
         setScr("select");
+        return;
       }
+      // No session, no local data → welcome screen
+      setScr("welcome");
     };
     init();
-  },[]);
+  },[loadUserDogs]);
+
+  const handleSignIn = useCallback(async (signedInUser) => {
+    setUser(signedInUser);
+    const loaded = await loadUserDogs(signedInUser.id);
+    if (!loaded) setScr("onboarding"); // Connecté mais aucun chien → onboarding
+  }, [loadUserDogs]);
 
   const handleComplete = async (profileData, planData) => {
     const id=`dog_${Date.now()}`;
@@ -2344,7 +2467,7 @@ export default function App() {
     await save("cny_dogs",newDogs);
     if(newDogs.length===0){
       setActiveDogId(null);
-      setScr("hero");
+      setScr("welcome");
     } else {
       setActiveDogId(null);
       setScr("select");
@@ -2362,7 +2485,7 @@ export default function App() {
     setUser(null); setDogs([]); setActiveDogId(null);
     localStorage.removeItem('canymo_pending_dog');
     await save("cny_dogs",[]); await save("cny_active",null);
-    setScr("hero");
+    setScr("welcome");
   };
 
   const handleDeleteAccount = async () => {
@@ -2380,13 +2503,21 @@ export default function App() {
     <>
       <style>{CSS}</style>
       <div className="app">
-        {scr!=="dashboard"&&scr!=="generating"&&scr!=="account"&&(
+        {scr==="onboarding"&&(
           <nav className="nav">
             <div className="logo">Can<span>ymo</span></div>
             <div className="badge">BETA</div>
           </nav>
         )}
-        {scr==="hero"&&<Hero onStart={()=>setScr("onboarding")}/>}
+        {scr==="loading"&&(
+          <div className="splash">
+            <div className="splash-logo">Can<em>ymo</em></div>
+            <div className="ld-spinner"/>
+            <div className="splash-sub">Chargement...</div>
+          </div>
+        )}
+        {scr==="welcome"&&<WelcomeScreen onStart={()=>setScr("onboarding")} onLogin={()=>setScr("login")}/>}
+        {scr==="login"&&<LoginScreen onBack={()=>setScr("welcome")} onSignIn={handleSignIn}/>}
         {scr==="select"&&<DogSelect dogs={dogs} onSelect={handleSelectDog} onAdd={handleAddDog}/>}
         {scr==="onboarding"&&<Onboarding onComplete={handleComplete} existingDogs={dogs} user={user}/>}
         {scr==="generating"&&(
