@@ -2352,6 +2352,8 @@ export default function App() {
   const [dogs, setDogs] = useState([]);
   const [activeDogId, setActiveDogId] = useState(null);
   const [user, setUser] = useState(null);
+  const [isPro, setIsPro] = useState(false);
+  const [appPaywallOpen, setAppPaywallOpen] = useState(false);
 
   const activeDog = dogs.find(d=>d.id===activeDogId)||null;
 
@@ -2462,6 +2464,12 @@ export default function App() {
     init();
   },[loadUserDogs]);
 
+  useEffect(()=>{
+    if (!user) { setIsPro(false); return; }
+    supabase.from("subscriptions").select("status,plan").eq("user_id", user.id).single()
+      .then(({data})=>{ setIsPro(checkIsPro(user.email, data)); });
+  },[user]);
+
   const handleSignIn = useCallback(async (signedInUser) => {
     setUser(signedInUser);
     const loaded = await loadUserDogs(signedInUser.id);
@@ -2503,7 +2511,10 @@ export default function App() {
     await save("cny_active",id);
   };
 
-  const handleAddDog = () => setScr("onboarding");
+  const handleAddDog = () => {
+    if (!isPro) { setAppPaywallOpen(true); return; }
+    setScr("onboarding");
+  };
 
   const handleSwitchDog = () => setScr("select");
 
@@ -2565,6 +2576,7 @@ export default function App() {
         {scr==="welcome"&&<WelcomeScreen onStart={()=>setScr("onboarding")} onLogin={()=>setScr("login")}/>}
         {scr==="login"&&<LoginScreen onBack={()=>setScr("welcome")} onSignIn={handleSignIn}/>}
         {scr==="select"&&<DogSelect dogs={dogs} onSelect={handleSelectDog} onAdd={handleAddDog}/>}
+        {appPaywallOpen&&<PaywallOverlay dogName={activeDog?.profile?.name||"votre chien"} onClose={()=>setAppPaywallOpen(false)}/>}
         {scr==="onboarding"&&<Onboarding onComplete={handleComplete} existingDogs={dogs} user={user}/>}
         {scr==="generating"&&(
           <div className="ld">
@@ -2579,7 +2591,7 @@ export default function App() {
             user={user}
             dogs={dogs}
             onBack={()=>setScr(activeDog?"dashboard":"select")}
-            onAddDog={()=>setScr("onboarding")}
+            onAddDog={handleAddDog}
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}
           />
