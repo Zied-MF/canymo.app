@@ -2325,9 +2325,8 @@ function InstallBanner() {
 }
 
 // ─── SUPABASE MAPPING ────────────────────────────────────────────────────
-function dogToSupabaseRow(id, userId, profile, plan) {
+function dogToSupabaseRow(userId, profile, plan) {
   return {
-    id,
     user_id: userId,
     name: profile.name || null,
     breed: profile.custom || profile.breed || null,
@@ -2415,19 +2414,19 @@ export default function App() {
                 const { data: existingRows, error: existingErr } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
                 console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
                 const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r,plan:r.current_plan})) : [];
-                const id = `dog_${Date.now()}`;
                 const p = {...pending, currentWeek:1};
-                const newDog = {id, profile:p, plan};
+                const row = dogToSupabaseRow(session.user.id, p, plan);
+                console.log('[Init] Insertion Supabase:', JSON.stringify(row, null, 2));
+                const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
+                if (insertErr) { console.error('[Init] Erreur insert dog:', insertErr.message); }
+                else { console.log('[Init] Chien sauvegardé dans Supabase ✓ id:', inserted.id); }
+                const id = inserted?.id || `local_${Date.now()}`;
+                const newDog = {id, profile:{...p, id}, plan};
                 const allDogs = [...existingDogs, newDog];
                 setDogs(allDogs);
                 setActiveDogId(id);
                 await save("cny_dogs", allDogs);
                 await save("cny_active", id);
-                const row = dogToSupabaseRow(id, session.user.id, p, plan);
-                console.log('[Init] Insertion Supabase:', JSON.stringify(row, null, 2));
-                const { error: insertErr } = await supabase.from("dogs").insert(row);
-                if (insertErr) console.error('[Init] Erreur insert dog:', insertErr.message);
-                else console.log('[Init] Chien sauvegardé dans Supabase ✓');
                 setScr(allDogs.length > 1 ? "select" : "dashboard");
                 return;
               }
@@ -2461,24 +2460,24 @@ export default function App() {
   }, [loadUserDogs]);
 
   const handleComplete = async (profileData, planData) => {
-    const id=`dog_${Date.now()}`;
     const p={...profileData,currentWeek:1};
-    const newDog={id,profile:p,plan:planData};
+    let id = `local_${Date.now()}`;
+    if (user) {
+      try {
+        const row = dogToSupabaseRow(user.id, p, planData);
+        console.log('[handleComplete] Insertion Supabase:', JSON.stringify(row, null, 2));
+        const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
+        if (insertErr) console.error('[handleComplete] Erreur insert dog:', insertErr.message);
+        else { id = inserted.id; console.log('[handleComplete] Chien sauvegardé dans Supabase ✓ id:', id); }
+      } catch(e) { console.error('[handleComplete] Exception:', e); }
+    }
+    const newDog={id,profile:{...p,id},plan:planData};
     const newDogs=[...dogs,newDog];
     setDogs(newDogs);
     setActiveDogId(id);
     setScr("dashboard");
     await save("cny_dogs",newDogs);
     await save("cny_active",id);
-    if (user) {
-      try {
-        const row = dogToSupabaseRow(id, user.id, p, planData);
-        console.log('[handleComplete] Insertion Supabase:', JSON.stringify(row, null, 2));
-        const { error: insertErr } = await supabase.from("dogs").insert(row);
-        if (insertErr) console.error('[handleComplete] Erreur insert dog:', insertErr.message);
-        else console.log('[handleComplete] Chien sauvegardé dans Supabase ✓');
-      } catch(e) { console.error('[handleComplete] Exception:', e); }
-    }
   };
 
   const handleSelectDog = async (id) => {
