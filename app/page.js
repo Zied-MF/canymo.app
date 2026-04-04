@@ -1335,17 +1335,28 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
     if (authTab === "signup") {
       if (authPwd.length < 6) { setAuthErr("Le mot de passe doit faire au moins 6 caractères."); setAuthLoading(false); return; }
       if (authPwd !== authConfirm) { setAuthErr("Les mots de passe ne correspondent pas."); setAuthLoading(false); return; }
-      // S'assurer que les données sont bien sauvegardées avant l'inscription
-      localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
-      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPwd });
+      const pendingData = {...d, created_at: new Date().toISOString()};
+      // Sauvegarde localStorage (même appareil) + métadonnées Supabase (cross-device)
+      localStorage.setItem('canymo_pending_dog', JSON.stringify(pendingData));
+      const { error } = await supabase.auth.signUp({
+        email: authEmail,
+        password: authPwd,
+        options: { data: { pending_dog: JSON.stringify(pendingData) } }
+      });
       setAuthLoading(false);
       if (error) { setAuthErr(error.message); return; }
-      // NE PAS générer le plan — l'utilisateur doit confirmer son email d'abord
       setAuthOk(true);
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPwd });
+      console.log('[Auth] Tentative de connexion:', authEmail);
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPwd });
+      console.log('[Auth] Résultat:', { session: signInData?.session?.user?.email, error: error?.message });
       setAuthLoading(false);
-      if (error) { setAuthErr(error.message); return; }
+      if (error) {
+        console.error('[Auth] Erreur connexion:', error.message, error);
+        setAuthErr(error.message);
+        return;
+      }
+      console.log('[Auth] Connexion réussie, session user:', signInData?.session?.user?.id);
       // Connecté directement → générer le plan maintenant
       generate();
     }
@@ -2210,25 +2221,64 @@ export default function App() {
 
   const activeDog = dogs.find(d=>d.id===activeDogId)||null;
 
+  const loadUserDogs = useCallback(async (userId) => {
+    const { data: rows, error } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", userId);
+    console.log('[loadUserDogs]', rows?.length ?? 0, 'chiens', error ? `erreur: ${error.message}` : 'ok');
+    if (rows && rows.length > 0) {
+      const formatted = rows.map(r => ({id:r.id, profile:r.profile, plan:r.plan}));
+      setDogs(formatted);
+      const activeId = await load("cny_active");
+      const preferred = formatted.find(d=>d.id===activeId) ? activeId : formatted[0].id;
+      setActiveDogId(preferred);
+      setScr(formatted.length > 1 ? "select" : "dashboard");
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Écoute les changements de session (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
+  useEffect(()=>{
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth event]', event, session?.user?.email ?? 'no session');
+      if (event === 'SIGNED_OUT') {
+        setUser(null); setDogs([]); setActiveDogId(null); setScr("hero");
+      }
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[Auth] Token renouvelé automatiquement');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(()=>{
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('[Init] Session:', session ? `user=${session.user.email}` : 'null');
         if (session) {
           setUser(session.user);
           // Vérifie les données d'onboarding en attente (retour après confirmation email)
-          const pendingRaw = localStorage.getItem('canymo_pending_dog');
+          // Priorité : localStorage (même appareil) → métadonnées Supabase (cross-device)
+          const localRaw = localStorage.getItem('canymo_pending_dog');
+          const metaRaw = session.user.user_metadata?.pending_dog;
+          const pendingRaw = localRaw || metaRaw || null;
+          console.log('[Init] pending_dog source:', localRaw ? 'localStorage' : metaRaw ? 'user_metadata' : 'aucun');
           if (pendingRaw) {
             try {
               const pending = JSON.parse(pendingRaw);
               const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
+              console.log('[Init] pending_dog âge:', hoursOld.toFixed(1), 'h, chien:', pending.name);
               if (hoursOld < 24) {
                 // Données valides — générer le plan automatiquement
                 setScr("generating");
                 const plan = await generatePlanForDog(pending);
+                console.log('[Init] Plan généré pour:', pending.name);
                 localStorage.removeItem('canymo_pending_dog');
+                // Efface aussi les métadonnées cross-device
+                try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
                 // Load existing dogs first so we don't overwrite them
-                const { data: existingRows } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
+                const { data: existingRows, error: existingErr } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
+                console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
                 const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r.profile,plan:r.plan})) : [];
                 const id = `dog_${Date.now()}`;
                 const p = {...pending, currentWeek:1};
@@ -2238,27 +2288,20 @@ export default function App() {
                 setActiveDogId(id);
                 await save("cny_dogs", allDogs);
                 await save("cny_active", id);
-                try {
-                  await supabase.from("dogs").insert({id, user_id:session.user.id, profile:p, plan});
-                } catch {}
+                const { error: insertErr } = await supabase.from("dogs").insert({id, user_id:session.user.id, profile:p, plan});
+                if (insertErr) console.error('[Init] Erreur insert dog:', insertErr.message);
                 setScr(allDogs.length > 1 ? "select" : "dashboard");
                 return;
               }
-            } catch {}
+            } catch (e) { console.error('[Init] Erreur parsing pending_dog:', e); }
             localStorage.removeItem('canymo_pending_dog');
           }
 
           // Pas de pending dog — charge les chiens depuis Supabase
-          const { data: rows } = await supabase.from("dogs").select("id,profile,plan").eq("user_id", session.user.id);
-          if (rows && rows.length > 0) {
-            const formatted = rows.map(r => ({id:r.id, profile:r.profile, plan:r.plan}));
-            setDogs(formatted);
-            setActiveDogId(formatted[0].id);
-            setScr("select");
-            return;
-          }
+          const loaded = await loadUserDogs(session.user.id);
+          if (loaded) return;
         }
-      } catch {}
+      } catch (e) { console.error('[Init] Exception globale:', e); }
       // Fallback localStorage
       const [dogsData, activeId] = await Promise.all([load("cny_dogs"), load("cny_active")]);
       if (dogsData && dogsData.length > 0) {
