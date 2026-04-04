@@ -2395,12 +2395,13 @@ export default function App() {
           setUser(session.user);
           console.log('[Init] Email confirmé:', session.user.email_confirmed_at ? 'oui' : 'non');
 
-          // 1. Charger les chiens depuis Supabase EN PREMIER
-          const { data: existingRows } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
-          console.log('[Init] Chiens en base:', existingRows?.length ?? 0);
+          // 1. Charger les chiens depuis Supabase EN PREMIER (source de vérité)
+          const { data: existingRows, error: rowsErr } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
+          console.log('[Init] Chiens en base:', existingRows?.length ?? 0, rowsErr ? `(erreur: ${rowsErr.message})` : '');
 
-          // 2. S'il existe des chiens avec un programme → dashboard directement, jamais régénérer
+          // 2. S'il existe des chiens → dashboard directement, TOUJOURS (peu importe localStorage)
           if (existingRows && existingRows.length > 0) {
+            // Nettoyer localStorage pour éviter tout conflit futur
             localStorage.removeItem('canymo_pending_dog');
             try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
             const formatted = existingRows.map(r => ({id:r.id, profile:r, plan:r.current_plan}));
@@ -2412,7 +2413,21 @@ export default function App() {
             return;
           }
 
-          // 3. Aucun chien en base → vérifier pending_dog (retour après confirmation email)
+          // Si erreur Supabase (RLS, réseau) → ne pas tomber dans pending_dog, utiliser localStorage
+          if (rowsErr) {
+            console.error('[Init] Erreur fetch dogs, fallback localStorage');
+            const [dogsData, activeId] = await Promise.all([load("cny_dogs"), load("cny_active")]);
+            if (dogsData && dogsData.length > 0) {
+              setDogs(dogsData);
+              setActiveDogId(activeId || dogsData[0].id);
+              setScr(dogsData.length > 1 ? "select" : "dashboard");
+            } else {
+              setScr("welcome");
+            }
+            return;
+          }
+
+          // 3. Aucun chien en base (et pas d'erreur) → vérifier pending_dog
           const localRaw = localStorage.getItem('canymo_pending_dog');
           const metaRaw = session.user.user_metadata?.pending_dog;
           const pendingRaw = localRaw || metaRaw || null;
