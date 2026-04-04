@@ -38,6 +38,7 @@ const DAYS_SHORT=["L","M","M","J","V","S","D"];
 // ─── ADMIN WHITELIST ────────────────────────────────────────────────────────
 const ADMIN_EMAILS = [
   'zieed.fekih@gmail.com',
+  'zied.fekih@hotmail.com',
 ];
 const checkIsPro = (userEmail, subscription) => {
   if (userEmail && ADMIN_EMAILS.includes(userEmail)) return true;
