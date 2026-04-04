@@ -2324,6 +2324,29 @@ function InstallBanner() {
   );
 }
 
+// ─── SUPABASE MAPPING ────────────────────────────────────────────────────
+function dogToSupabaseRow(id, userId, profile, plan) {
+  return {
+    id,
+    user_id: userId,
+    name: profile.name || null,
+    breed: profile.custom || profile.breed || null,
+    age_years: profile.age ? Number(profile.age) : null,
+    gender: profile.gender || null,
+    current_weight: profile.weight ? Number(profile.weight) : null,
+    ideal_weight: profile.idealWeight ? Number(profile.idealWeight) : null,
+    initial_weight: profile.weight ? Number(profile.weight) : null,
+    activity_level: profile.activity || null,
+    pathologies: profile.pathologies || null,
+    objectives: Array.isArray(profile.goals) ? profile.goals.join(', ') : (profile.goals || null),
+    current_week: profile.currentWeek || 1,
+    current_plan: plan || null,
+    plan_generated_at: new Date().toISOString(),
+    program_start_date: new Date().toISOString().split('T')[0],
+    status: 'active',
+  };
+}
+
 // ─── MAIN APP ────────────────────────────────────────────────────────────
 export default function App() {
   const [scr, setScr] = useState("loading"); // "loading"|"welcome"|"login"|"select"|"onboarding"|"dashboard"|"account"
@@ -2400,8 +2423,11 @@ export default function App() {
                 setActiveDogId(id);
                 await save("cny_dogs", allDogs);
                 await save("cny_active", id);
-                const { error: insertErr } = await supabase.from("dogs").insert({id, user_id:session.user.id, profile:p, plan});
+                const row = dogToSupabaseRow(id, session.user.id, p, plan);
+                console.log('[Init] Insertion Supabase:', JSON.stringify(row, null, 2));
+                const { error: insertErr } = await supabase.from("dogs").insert(row);
                 if (insertErr) console.error('[Init] Erreur insert dog:', insertErr.message);
+                else console.log('[Init] Chien sauvegardé dans Supabase ✓');
                 setScr(allDogs.length > 1 ? "select" : "dashboard");
                 return;
               }
@@ -2445,7 +2471,13 @@ export default function App() {
     await save("cny_dogs",newDogs);
     await save("cny_active",id);
     if (user) {
-      try { await supabase.from("dogs").insert({id, user_id:user.id, profile:p, plan:planData}); } catch {}
+      try {
+        const row = dogToSupabaseRow(id, user.id, p, planData);
+        console.log('[handleComplete] Insertion Supabase:', JSON.stringify(row, null, 2));
+        const { error: insertErr } = await supabase.from("dogs").insert(row);
+        if (insertErr) console.error('[handleComplete] Erreur insert dog:', insertErr.message);
+        else console.log('[handleComplete] Chien sauvegardé dans Supabase ✓');
+      } catch(e) { console.error('[handleComplete] Exception:', e); }
     }
   };
 
