@@ -2337,7 +2337,7 @@ function dogToSupabaseRow(userId, profile, plan) {
     initial_weight: profile.weight ? Number(profile.weight) : null,
     activity_level: profile.activity || null,
     pathologies: profile.pathologies || null,
-    objectives: Array.isArray(profile.goals) ? profile.goals.join(', ') : (profile.goals || null),
+    objectives: Array.isArray(profile.goals) ? profile.goals : (typeof profile.goals === 'string' && profile.goals ? profile.goals.split(',').map(o => o.trim()) : []),
     current_week: profile.currentWeek || 1,
     current_plan: plan || null,
     plan_generated_at: new Date().toISOString(),
