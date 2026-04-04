@@ -1259,7 +1259,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
     localStorage.setItem('canymo_pending_dog', JSON.stringify({...d, created_at: new Date().toISOString()}));
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : 'https://app.canymo.com' }
     });
   };
 
