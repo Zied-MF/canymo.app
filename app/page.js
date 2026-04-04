@@ -2394,8 +2394,25 @@ export default function App() {
         if (session) {
           setUser(session.user);
           console.log('[Init] Email confirmé:', session.user.email_confirmed_at ? 'oui' : 'non');
-          // Vérifie les données d'onboarding en attente (retour après confirmation email)
-          // Priorité : localStorage (même appareil) → métadonnées Supabase (cross-device)
+
+          // 1. Charger les chiens depuis Supabase EN PREMIER
+          const { data: existingRows } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
+          console.log('[Init] Chiens en base:', existingRows?.length ?? 0);
+
+          // 2. S'il existe des chiens avec un programme → dashboard directement, jamais régénérer
+          if (existingRows && existingRows.length > 0) {
+            localStorage.removeItem('canymo_pending_dog');
+            try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
+            const formatted = existingRows.map(r => ({id:r.id, profile:r, plan:r.current_plan}));
+            setDogs(formatted);
+            const activeId = await load("cny_active");
+            const preferred = formatted.find(d=>d.id===activeId) ? activeId : formatted[0].id;
+            setActiveDogId(preferred);
+            setScr(formatted.length > 1 ? "select" : "dashboard");
+            return;
+          }
+
+          // 3. Aucun chien en base → vérifier pending_dog (retour après confirmation email)
           const localRaw = localStorage.getItem('canymo_pending_dog');
           const metaRaw = session.user.user_metadata?.pending_dog;
           const pendingRaw = localRaw || metaRaw || null;
@@ -2406,48 +2423,35 @@ export default function App() {
               const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
               console.log('[Init] pending_dog âge:', hoursOld.toFixed(1), 'h, chien:', pending.name);
               if (hoursOld < 24) {
-                // Données valides — générer le plan automatiquement
                 setScr("generating");
                 const plan = await generatePlanForDog(pending);
                 console.log('[Init] Plan généré pour:', pending.name);
                 localStorage.removeItem('canymo_pending_dog');
-                // Efface aussi les métadonnées cross-device
                 try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
-                // Load existing dogs first so we don't overwrite them
-                const { data: existingRows, error: existingErr } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
-                console.log('[Init] Chiens existants:', existingRows?.length ?? 0, existingErr ? `erreur: ${existingErr.message}` : '');
-                const existingDogs = existingRows ? existingRows.map(r=>({id:r.id,profile:r,plan:r.current_plan})) : [];
-                const p = {...pending, currentWeek:1};
                 const userId = session.user.id;
-                console.log('[Init] user_id utilisé pour insert:', userId);
-                // Ensure profile exists (FK constraint: dogs.user_id → profiles.id)
-                const { data: profData, error: profErr } = await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' }).select();
-                console.log('[Init] Profile upsert result → data:', profData, 'error:', profErr?.message ?? null);
-                // Verify profile actually exists
-                const { data: profCheck } = await supabase.from("profiles").select("id").eq("id", userId).single();
-                console.log('[Init] Profile existe dans DB:', profCheck ? 'OUI' : 'NON');
+                const p = {...pending, currentWeek:1};
+                const { error: profErr } = await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' });
+                if (profErr) console.error('[Init] Erreur upsert profile:', profErr.message);
                 const row = dogToSupabaseRow(userId, p, plan);
-                console.log('[Init] Insertion Supabase row:', JSON.stringify(row, null, 2));
                 const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
-                if (insertErr) { console.error('[Init] Erreur insert dog:', insertErr.message); }
-                else { console.log('[Init] Chien sauvegardé dans Supabase ✓ id:', inserted.id); }
+                if (insertErr) console.error('[Init] Erreur insert dog:', insertErr.message);
+                else console.log('[Init] Chien sauvegardé ✓ id:', inserted.id);
                 const id = inserted?.id || `local_${Date.now()}`;
                 const newDog = {id, profile:{...p, id}, plan};
-                const allDogs = [...existingDogs, newDog];
-                setDogs(allDogs);
+                setDogs([newDog]);
                 setActiveDogId(id);
-                await save("cny_dogs", allDogs);
+                await save("cny_dogs", [newDog]);
                 await save("cny_active", id);
-                setScr(allDogs.length > 1 ? "select" : "dashboard");
+                setScr("dashboard");
                 return;
               }
             } catch (e) { console.error('[Init] Erreur parsing pending_dog:', e); }
             localStorage.removeItem('canymo_pending_dog');
           }
 
-          // Pas de pending dog — charge les chiens depuis Supabase
-          const loaded = await loadUserDogs(session.user.id);
-          if (loaded) return;
+          // 4. Aucun chien, aucun pending → onboarding
+          setScr("onboarding");
+          return;
         }
       } catch (e) { console.error('[Init] Exception globale:', e); }
       // Fallback localStorage
