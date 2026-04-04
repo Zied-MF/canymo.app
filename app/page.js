@@ -221,6 +221,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .add-dog-banner{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #E5E7EB;padding:14px 22px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#2D6444;box-shadow:0 -2px 10px rgba(0,0,0,.06);transition:background .2s;z-index:100}
 .add-dog-banner:hover{background:#F0FDF4}
 
+/* INSTALL BANNER */
+.install-banner{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:12px 12px 0 0;padding:16px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,.12);z-index:150}
+.install-icon{font-size:26px;flex-shrink:0}
+.install-text{flex:1;font-size:14px;font-weight:600;color:#1C3D2A;line-height:1.3}
+.install-btn{background:#2D6444;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.install-close{background:none;border:none;font-size:20px;color:#9A8070;cursor:pointer;padding:0 4px;flex-shrink:0;line-height:1}
+.install-modal-wrap{position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center}
+.install-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4)}
+.install-modal{position:relative;z-index:1;background:#fff;border-radius:16px 16px 0 0;padding:28px 24px 36px;width:100%;max-width:480px}
+.install-modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:#1C3D2A;margin-bottom:20px}
+.install-os{margin-bottom:22px}
+.install-os-title{font-size:13px;font-weight:700;color:#9A8070;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.install-steps{display:flex;flex-direction:column;gap:10px}
+.install-step{display:flex;align-items:flex-start;gap:10px;font-size:15px;color:#1C3D2A;line-height:1.6}
+.install-step-num{width:24px;height:24px;border-radius:50%;background:#2D6444;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.install-modal-close{width:100%;background:#F0E6D3;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;color:#1C3D2A;cursor:pointer;margin-top:8px}
+
 /* PAYWALL */
 .paywall-wrap{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
 .paywall-blur{position:fixed;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(0,0,0,.45)}
@@ -2072,6 +2089,61 @@ function Hero({ onStart }) {
   );
 }
 
+// ─── INSTALL BANNER ──────────────────────────────────────────────────────
+function InstallBanner() {
+  const [visible, setVisible] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(()=>{
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const dismissed = localStorage.getItem("cny_install_dismissed");
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    setVisible(isMobile && !isStandalone && !dismissed);
+  },[]);
+
+  const dismiss = () => {
+    localStorage.setItem("cny_install_dismissed","1");
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <>
+      <div className="install-banner">
+        <div className="install-icon">📲</div>
+        <div className="install-text">Installe Canymo sur ton téléphone</div>
+        <button className="install-btn" onClick={()=>setModalOpen(true)}>Comment faire ?</button>
+        <button className="install-close" onClick={dismiss} aria-label="Fermer">×</button>
+      </div>
+      {modalOpen&&(
+        <div className="install-modal-wrap">
+          <div className="install-modal-bg" onClick={()=>setModalOpen(false)}/>
+          <div className="install-modal">
+            <div className="install-modal-title">📲 Installer Canymo</div>
+            <div className="install-os">
+              <div className="install-os-title">🍎 iPhone / iPad</div>
+              <div className="install-steps">
+                <div className="install-step"><div className="install-step-num">1</div><span>Appuie sur le bouton Partager <strong>↑</strong> en bas du navigateur</span></div>
+                <div className="install-step"><div className="install-step-num">2</div><span>Fais défiler et choisis <strong>"Sur l'écran d'accueil"</strong></span></div>
+                <div className="install-step"><div className="install-step-num">3</div><span>Appuie sur <strong>"Ajouter"</strong> en haut à droite</span></div>
+              </div>
+            </div>
+            <div className="install-os">
+              <div className="install-os-title">🤖 Android</div>
+              <div className="install-steps">
+                <div className="install-step"><div className="install-step-num">1</div><span>Appuie sur le menu <strong>⋮</strong> en haut à droite du navigateur</span></div>
+                <div className="install-step"><div className="install-step-num">2</div><span>Choisis <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong></span></div>
+              </div>
+            </div>
+            <button className="install-modal-close" onClick={()=>setModalOpen(false)}>Fermer</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── MAIN APP ────────────────────────────────────────────────────────────
 export default function App() {
   const [scr, setScr] = useState("hero"); // "hero"|"select"|"onboarding"|"dashboard"
@@ -2249,6 +2321,7 @@ export default function App() {
           />
         )}
       </div>
+      <InstallBanner/>
     </>
   );
 }
