@@ -2376,87 +2376,13 @@ export default function App() {
     return false;
   }, []);
 
-  // Écoute les changements de session
+  // Écoute les changements de session — uniquement SIGNED_OUT ici
+  // Le routing après login est géré par handleSignIn (email/pwd) et init() (OAuth/refresh)
   useEffect(()=>{
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[Auth event]', event, session?.user?.email ?? 'no session');
-
       if (event === 'SIGNED_OUT') {
         setUser(null); setDogs([]); setActiveDogId(null); setScr("welcome");
-        return;
-      }
-
-      // SIGNED_IN : uniquement pour retour OAuth (avant que init() soit terminé)
-      // Pour email/password, c'est handleSignIn qui gère le routing
-      if (event === 'SIGNED_IN' && session?.user && !initDoneRef.current) {
-        setUser(session.user);
-        console.log('[Auth SIGNED_IN] Chargement des données pour', session.user.email);
-
-        // 1. Chiens en Supabase
-        const { data: rows } = await supabase.from("dogs").select("*").eq("user_id", session.user.id);
-        if (rows && rows.length > 0) {
-          console.log('[Auth SIGNED_IN] Chiens trouvés en Supabase →dashboard');
-          localStorage.removeItem('canymo_pending_dog');
-          try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
-          const formatted = rows.map(r=>({id:r.id, profile:r, plan:r.current_plan}));
-          setDogs(formatted);
-          const preferred = formatted[0].id;
-          setActiveDogId(preferred);
-          setScr(formatted.length > 1 ? "select" : "dashboard");
-          return;
-        }
-
-        // 2. Chiens en localStorage
-        const localDogs = await load("cny_dogs");
-        if (localDogs && localDogs.length > 0 && localDogs.some(d=>d.plan)) {
-          console.log('[Auth SIGNED_IN] Chiens trouvés en localStorage → dashboard');
-          localStorage.removeItem('canymo_pending_dog');
-          setDogs(localDogs);
-          setActiveDogId(localDogs[0].id);
-          setScr(localDogs.length > 1 ? "select" : "dashboard");
-          return;
-        }
-
-        // 3. Pending dog → générer le plan (localStorage + sessionStorage backup + user_metadata)
-        const pendingRaw = localStorage.getItem('canymo_pending_dog')
-          || sessionStorage.getItem('canymo_pending_dog_backup')
-          || session.user.user_metadata?.pending_dog;
-        if (pendingRaw) {
-          try {
-            const pending = JSON.parse(pendingRaw);
-            const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
-            if (hoursOld < 24) {
-              console.log('[Auth SIGNED_IN] pending_dog trouvé → génération plan');
-              localStorage.removeItem('canymo_pending_dog');
-              sessionStorage.removeItem('canymo_pending_dog_backup');
-              try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
-              setScr("generating");
-              let plan;
-              try { plan = await generatePlanForDog(pending); }
-              catch(e) { console.error('[Auth SIGNED_IN] Erreur génération:', e); setScr("welcome"); return; }
-              const p = {...pending, currentWeek:1};
-              const localId = `local_${Date.now()}`;
-              const newDog = {id:localId, profile:{...p, id:localId}, plan};
-              await save("cny_dogs", [newDog]);
-              await save("cny_active", localId);
-              try {
-                await supabase.from("profiles").upsert({id:session.user.id},{onConflict:'id'});
-                const row = dogToSupabaseRow(session.user.id, p, plan);
-                const {data:ins, error:insErr} = await supabase.from("dogs").insert(row).select().single();
-                if (!insErr && ins) {
-                  const d2 = {id:ins.id, profile:{...p,id:ins.id}, plan};
-                  await save("cny_dogs",[d2]); await save("cny_active",ins.id);
-                  setDogs([d2]); setActiveDogId(ins.id); setScr("dashboard"); return;
-                }
-              } catch(e) { console.error('[Auth SIGNED_IN] Erreur Supabase:', e); }
-              setDogs([newDog]); setActiveDogId(localId); setScr("dashboard");
-              return;
-            }
-          } catch(e) { console.error('[Auth SIGNED_IN] Erreur pending_dog:', e); }
-        }
-
-        // 4. Rien → welcome
-        setScr("welcome");
       }
     });
     return () => subscription.unsubscribe();
@@ -2470,6 +2396,7 @@ export default function App() {
         if (!initHandled) {
           console.warn('[Init] Timeout de sécurité déclenché → welcome');
           initHandled = true;
+          initDoneRef.current = true;
           setScr("welcome");
         }
       }, 8000);
