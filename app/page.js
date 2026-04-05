@@ -2377,11 +2377,19 @@ export default function App() {
   }, []);
 
   // Écoute les changements de session — uniquement SIGNED_OUT ici
-  // Le routing après login est géré par handleSignIn (email/pwd) et init() (OAuth/refresh)
   useEffect(()=>{
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[Auth event]', event, session?.user?.email ?? 'no session');
       if (event === 'SIGNED_OUT') {
+        // Vérifier qu'il n'y a vraiment plus de session avant de rediriger
+        // (Supabase peut émettre SIGNED_OUT lors d'un refresh raté, même si la session existe encore)
+        await new Promise(r => setTimeout(r, 1000));
+        const { data: { session: check } } = await supabase.auth.getSession();
+        if (check) {
+          console.log('[Auth] SIGNED_OUT ignoré — session encore valide');
+          return;
+        }
+        console.log('[Auth] SIGNED_OUT confirmé → welcome');
         setUser(null); setDogs([]); setActiveDogId(null); setScr("welcome");
       }
     });
