@@ -2462,7 +2462,16 @@ export default function App() {
   }, []);
 
   useEffect(()=>{
+    let initHandled = false; // évite double exécution avec onAuthStateChange
     const init = async () => {
+      // Timeout de sécurité : si init bloque > 8s, aller au welcome
+      const safetyTimeout = setTimeout(() => {
+        if (!initHandled) {
+          console.warn('[Init] Timeout de sécurité déclenché → welcome');
+          initHandled = true;
+          setScr("welcome");
+        }
+      }, 8000);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('[Init] Session:', session ? `user=${session.user.email}` : 'null');
@@ -2586,10 +2595,11 @@ export default function App() {
         setDogs(dogsData);
         setActiveDogId(activeId || dogsData[0].id);
         setScr("select");
-        return;
+      } else {
+        setScr("welcome");
       }
-      // No session, no local data → welcome screen
-      setScr("welcome");
+      initHandled = true;
+      clearTimeout(safetyTimeout);
     };
     init();
   },[loadUserDogs]);
@@ -2701,6 +2711,7 @@ export default function App() {
             <div className="splash-logo">Can<em>ymo</em></div>
             <div className="ld-spinner"/>
             <div className="splash-sub">Chargement...</div>
+            <button onClick={()=>setScr("welcome")} style={{marginTop:32,background:"transparent",border:"1px solid #ccc",borderRadius:8,color:"#9A8070",padding:"8px 20px",fontSize:13,cursor:"pointer"}}>Continuer manuellement</button>
           </div>
         )}
         {scr==="welcome"&&<WelcomeScreen onStart={()=>setScr("onboarding")} onLogin={()=>setScr("login")}/>}
