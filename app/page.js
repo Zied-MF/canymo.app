@@ -40,9 +40,24 @@ const ADMIN_EMAILS = [
   'zieed.fekih@gmail.com',
   'zied.fekih@hotmail.com',
 ];
-const checkIsPro = (userEmail, subscription) => {
-  if (userEmail && ADMIN_EMAILS.includes(userEmail)) return true;
-  return !!(subscription && subscription.status === 'active' && subscription.plan === 'pro');
+const checkIsPro = async (userId, userEmail) => {
+  // 1. Admin whitelist
+  if (userEmail && ADMIN_EMAILS.includes(userEmail)) return { isPro: true, reason: 'admin' };
+  // 2. Early adopter (30 premiers inscrits, 6 mois gratuits)
+  const { data: profile } = await supabase
+    .from('profiles').select('is_early_adopter, signup_number, created_at').eq('id', userId).single();
+  if (profile?.is_early_adopter) {
+    const expiresAt = new Date(profile.created_at);
+    expiresAt.setMonth(expiresAt.getMonth() + 6);
+    if (new Date() < expiresAt) {
+      return { isPro: true, reason: 'early_adopter', expiresAt, signupNumber: profile.signup_number };
+    }
+  }
+  // 3. Subscription active
+  const { data: sub } = await supabase
+    .from('subscriptions').select('status,plan').eq('user_id', userId).single();
+  if (sub?.status === 'active' && sub?.plan === 'pro') return { isPro: true, reason: 'subscription' };
+  return { isPro: false };
 };
 
 // ─── STYLES ─────────────────────────────────────────────────────────────────
@@ -1809,8 +1824,7 @@ function Dashboard({ dogId, profile, plan, onSwitchDog, onDeleteDog, onAddDog, o
 
   useEffect(()=>{
     if (!user) return;
-    supabase.from("subscriptions").select("status,plan").eq("user_id", user.id).single()
-      .then(({data})=>{ setIsPro(checkIsPro(user.email, data)); });
+    checkIsPro(user.id, user.email).then(result=>{ setIsPro(result.isPro); });
   },[user]);
 
   const toggleDone = useCallback(async (i)=>{
@@ -2034,6 +2048,7 @@ function AccountScreen({ user, dogs, onBack, onAddDog, onSignOut, onDeleteAccoun
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [origFirst, setOrigFirst] = useState("");
   const [origLast, setOrigLast] = useState("");
+  const [proInfo, setProInfo] = useState(null);
 
   useEffect(()=>{
     if (!user) return;
@@ -2044,6 +2059,7 @@ function AccountScreen({ user, dogs, onBack, onAddDog, onSignOut, onDeleteAccoun
           setLastName(data.last_name||""); setOrigLast(data.last_name||"");
         }
       });
+    checkIsPro(user.id, user.email).then(result=>setProInfo(result));
   },[user]);
 
   const hasChanges = firstName !== origFirst || lastName !== origLast;
@@ -2092,14 +2108,42 @@ function AccountScreen({ user, dogs, onBack, onAddDog, onSignOut, onDeleteAccoun
       <div className="acct-section">
         <div className="acct-section-title">Abonnement</div>
         <div className="acct-card">
-          <div className="acct-row">
-            <span className="acct-row-label">Plan actuel</span>
-            <span className="acct-row-val">Gratuit</span>
-          </div>
+          {proInfo?.reason === 'early_adopter' && (
+            <>
+              <div className="acct-row">
+                <span className="acct-row-label">Plan actuel</span>
+                <span className="acct-row-val" style={{color:"#D4A853",fontWeight:700}}>🎉 Early Adopter #{proInfo.signupNumber}</span>
+              </div>
+              <div style={{fontSize:12,color:"var(--ts)",padding:"8px 0 4px",lineHeight:1.5}}>
+                Merci d'être parmi les premiers ! Accès Pro gratuit jusqu'au{" "}
+                <strong>{proInfo.expiresAt?.toLocaleDateString("fr-FR")}</strong>
+              </div>
+            </>
+          )}
+          {proInfo?.reason === 'admin' && (
+            <div className="acct-row">
+              <span className="acct-row-label">Plan actuel</span>
+              <span className="acct-row-val" style={{color:"#2D6444",fontWeight:700}}>⚡ Admin</span>
+            </div>
+          )}
+          {proInfo?.reason === 'subscription' && (
+            <div className="acct-row">
+              <span className="acct-row-label">Plan actuel</span>
+              <span className="acct-row-val" style={{color:"#2D6444",fontWeight:700}}>✨ Pro</span>
+            </div>
+          )}
+          {(!proInfo || !proInfo.isPro) && (
+            <div className="acct-row">
+              <span className="acct-row-label">Plan actuel</span>
+              <span className="acct-row-val">Gratuit</span>
+            </div>
+          )}
         </div>
-        <button className="btn btn-g" style={{width:"100%",justifyContent:"center",marginTop:10}}>
-          ✨ Passer à Pro — 5,99€/mois
-        </button>
+        {(!proInfo || !proInfo.isPro) && (
+          <button className="btn btn-g" style={{width:"100%",justifyContent:"center",marginTop:10}}>
+            ✨ Passer à Pro — 5,99€/mois
+          </button>
+        )}
       </div>
 
       {/* Mes chiens */}
@@ -2562,8 +2606,7 @@ export default function App() {
 
   useEffect(()=>{
     if (!user) { setIsPro(false); return; }
-    supabase.from("subscriptions").select("status,plan").eq("user_id", user.id).single()
-      .then(({data})=>{ setIsPro(checkIsPro(user.email, data)); });
+    checkIsPro(user.id, user.email).then(result=>{ setIsPro(result.isPro); });
   },[user]);
 
   const handleSignIn = useCallback(async (signedInUser) => {
