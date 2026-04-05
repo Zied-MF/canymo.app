@@ -957,7 +957,7 @@ function TabConseils({ plan, profile }) {
           <div key={i} className="ti2"><span>🐾</span><span>{t}</span></div>
         ))}
       </div>
-      <div className="an">🏥 <span>Ces conseils sont générés par IA. Consulte toujours un vétérinaire pour un suivi médical personnalisé.</span></div>
+      <div className="an">🏥 <span>Consulte toujours un vétérinaire pour un suivi médical personnalisé.</span></div>
     </div>
   );
 }
