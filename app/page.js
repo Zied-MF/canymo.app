@@ -1774,7 +1774,7 @@ function Dashboard({ dogId, profile, plan, onSwitchDog, onDeleteDog, onAddDog, o
   const [isPro, setIsPro] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [done, setDone] = useState({});
-  const [weights, setWeights] = useState([{date: today(), weight: profile.weight}]);
+  const [weights, setWeights] = useState([{date: today(), weight: profile.weight || 0}]);
   const [photos, setPhotos] = useState({});
   const [notifs, setNotifs] = useState({morning:false,evening:false,weekly:false,weight:false});
   const [recaps, setRecaps] = useState({});
@@ -2328,6 +2328,26 @@ function InstallBanner() {
 }
 
 // ─── SUPABASE MAPPING ────────────────────────────────────────────────────
+// Convertit une ligne Supabase en profil local (noms de champs uniformes)
+function supabaseRowToProfile(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    breed: r.breed || "Autre race",
+    custom: r.breed,
+    age: r.age_years,
+    gender: r.gender,
+    weight: r.current_weight,
+    idealWeight: r.ideal_weight,
+    initialWeight: r.initial_weight,
+    activity: r.activity_level,
+    pathologies: r.pathologies,
+    goals: Array.isArray(r.objectives) ? r.objectives : (r.objectives ? [r.objectives] : []),
+    currentWeek: r.current_week || 1,
+    status: r.status,
+  };
+}
+
 function dogToSupabaseRow(userId, profile, plan) {
   return {
     user_id: userId,
@@ -2365,7 +2385,7 @@ export default function App() {
     const { data: rows, error } = await supabase.from("dogs").select("*").eq("user_id", userId);
     console.log('[loadUserDogs]', rows?.length ?? 0, 'chiens', error ? `erreur: ${error.message}` : 'ok');
     if (rows && rows.length > 0) {
-      const formatted = rows.map(r => ({id:r.id, profile:r, plan:r.current_plan}));
+      const formatted = rows.map(r => ({id:r.id, profile:supabaseRowToProfile(r), plan:r.current_plan}));
       setDogs(formatted);
       const activeId = await load("cny_active");
       const preferred = formatted.find(d=>d.id===activeId) ? activeId : formatted[0].id;
@@ -2424,7 +2444,7 @@ export default function App() {
             // Nettoyer localStorage pour éviter tout conflit futur
             localStorage.removeItem('canymo_pending_dog');
             try { await supabase.auth.updateUser({ data: { pending_dog: null } }); } catch {}
-            const formatted = existingRows.map(r => ({id:r.id, profile:r, plan:r.current_plan}));
+            const formatted = existingRows.map(r => ({id:r.id, profile:supabaseRowToProfile(r), plan:r.current_plan}));
             setDogs(formatted);
             const activeId = await load("cny_active");
             const preferred = formatted.find(d=>d.id===activeId) ? activeId : formatted[0].id;
