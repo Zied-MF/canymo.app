@@ -2693,11 +2693,13 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // Nettoyer l'état local immédiatement (UI réactive sans attendre Supabase)
     setUser(null); setDogs([]); setActiveDogId(null);
     localStorage.removeItem('canymo_pending_dog');
-    await save("cny_dogs",[]); await save("cny_active",null);
+    save("cny_dogs",[]); save("cny_active",null);
     setScr("welcome");
+    // Déconnexion Supabase en arrière-plan
+    try { await supabase.auth.signOut(); } catch(e) { console.error('[SignOut]', e); }
   };
 
   const handleDeleteAccount = async () => {
