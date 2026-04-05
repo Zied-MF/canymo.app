@@ -1084,7 +1084,7 @@ function TabBilan({ profile, plan, recaps, onGenerateBilan, doneHistory, weights
   return (
     <div>
       <div className="sect">📊 Bilan hebdomadaire</div>
-      <div className="an">🤖 <span>L'IA analyse ta semaine et génère des recommandations personnalisées.</span></div>
+      <div className="an">🐾 <span>Canymo analyse ta semaine et génère des recommandations personnalisées.</span></div>
 
       {Array.from({length: currentWeek}, (_,i)=>i+1).reverse().map(w=>{
         const recap = recaps[w];
