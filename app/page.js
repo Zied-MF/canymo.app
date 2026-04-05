@@ -2280,8 +2280,7 @@ function InstallBanner() {
   useEffect(()=>{
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     const dismissed = localStorage.getItem("cny_install_dismissed");
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    setVisible(isMobile && !isStandalone && !dismissed);
+    setVisible(!isStandalone && !dismissed);
   },[]);
 
   const dismiss = () => {
