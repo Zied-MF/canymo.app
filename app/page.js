@@ -2359,6 +2359,7 @@ export default function App() {
   const [appPaywallOpen, setAppPaywallOpen] = useState(false);
 
   const activeDog = dogs.find(d=>d.id===activeDogId)||null;
+  const initDoneRef = useRef(false); // true après que init() a terminé
 
   const loadUserDogs = useCallback(async (userId) => {
     const { data: rows, error } = await supabase.from("dogs").select("*").eq("user_id", userId);
@@ -2385,9 +2386,9 @@ export default function App() {
         return;
       }
 
-      // SIGNED_IN déclenché après retour OAuth Google (ou connexion email)
-      // Uniquement si l'app est encore sur loading/login/welcome (pas déjà dans l'app)
-      if (event === 'SIGNED_IN' && session?.user) {
+      // SIGNED_IN : uniquement pour retour OAuth (avant que init() soit terminé)
+      // Pour email/password, c'est handleSignIn qui gère le routing
+      if (event === 'SIGNED_IN' && session?.user && !initDoneRef.current) {
         setUser(session.user);
         console.log('[Auth SIGNED_IN] Chargement des données pour', session.user.email);
 
@@ -2599,6 +2600,7 @@ export default function App() {
         setScr("welcome");
       }
       initHandled = true;
+      initDoneRef.current = true;
       clearTimeout(safetyTimeout);
     };
     init();
