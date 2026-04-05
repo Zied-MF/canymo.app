@@ -2614,8 +2614,23 @@ export default function App() {
 
   const handleSignIn = useCallback(async (signedInUser) => {
     setUser(signedInUser);
+    // 1. Chiens en Supabase
     const loaded = await loadUserDogs(signedInUser.id);
-    if (!loaded) setScr("onboarding"); // Connecté mais aucun chien → onboarding
+    if (loaded) return;
+    // 2. Chiens en localStorage avec plan
+    const localDogs = await load("cny_dogs");
+    if (localDogs && localDogs.length > 0 && localDogs.some(d => d.plan)) {
+      localStorage.removeItem('canymo_pending_dog');
+      setDogs(localDogs);
+      setActiveDogId(localDogs[0].id);
+      setScr(localDogs.length > 1 ? "select" : "dashboard");
+      return;
+    }
+    // 3. Pending dog
+    const pendingRaw = localStorage.getItem('canymo_pending_dog') || sessionStorage.getItem('canymo_pending_dog_backup');
+    if (pendingRaw) { setScr("generating"); return; } // init() prendra le relais au prochain render
+    // 4. Rien → onboarding
+    setScr("onboarding");
   }, [loadUserDogs]);
 
   const handleComplete = async (profileData, planData) => {
