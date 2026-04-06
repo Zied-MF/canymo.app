@@ -1354,7 +1354,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
     {v:"Appartement avec terrasse",icon:"🌿",desc:"Petit espace extérieur"},
     {v:"Maison avec jardin",icon:"🏡",desc:"Espace extérieur disponible"},
   ];
-  const pct=[0,11,22,33,44,56,67,78,89,100];
+  const pct=[0,11,22,33,44,56,67,78,89,100,100];
 
   const handleGoogleAuth = async () => {
     const pendingData = {...d, created_at: new Date().toISOString()};
@@ -1448,7 +1448,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
   return (
     <div className="ob">
       <div className="ob-prog">
-        <div className="ob-prog-lbl">Étape {step} sur 9</div>
+        <div className="ob-prog-lbl">Étape {displayStep(step)} sur {totalOBSteps}</div>
         <div className="pbar"><div className="pfill" style={{width:`${pct[step]||0}%`}}/></div>
       </div>
 
@@ -1685,7 +1685,7 @@ function Onboarding({ onComplete, existingDogs = [], user = null }) {
           <label className="flbl">Ration actuelle (g / jour)</label>
           <input className="inp" type="number" placeholder="Ex: 300" value={d.ration} onChange={e=>upd({ration:e.target.value})}/>
         </div>
-        <div className="an">🤖 <span>L'IA va générer le programme de {d.name}{d.city?` à ${d.city}`:""}. ~15 secondes.</span></div>
+        <div className="an">🐾 <span>Canymo va générer le programme de {d.name} en quelques minutes.</span></div>
         <div className="snav">
           <button className="btn btn-ghost" onClick={()=>go(8)}>← Retour</button>
           <button className="btn btn-g" onClick={()=>{
@@ -1795,6 +1795,7 @@ function Dashboard({ dogId, profile, plan, onSwitchDog, onDeleteDog, onAddDog, o
   const [recaps, setRecaps] = useState({});
   const [doneHistory, setDoneHistory] = useState({});
   const [currentPlan, setCurrentPlan] = useState(plan);
+  const [nextWeekInfo, setNextWeekInfo] = useState(null);
 
   const bi = BREEDS[profile.breed]||BREEDS["Autre race"];
   const breedName = profile.breed==="Autre race"?(profile.custom||profile.breed):profile.breed;
@@ -1826,6 +1827,20 @@ function Dashboard({ dogId, profile, plan, onSwitchDog, onDeleteDog, onAddDog, o
     if (!user) return;
     checkIsPro(user.id, user.email).then(result=>{ setIsPro(result.isPro); });
   },[user]);
+
+  useEffect(()=>{
+    if (!user || !dogId) return;
+    checkAndGenerateNextWeek(dogId, profile).then(info => {
+      if (!info) return;
+      if (info.type === 'promoted') {
+        setCurrentPlan(info.plan);
+        onPlanUpdate && onPlanUpdate(info.plan);
+      } else if (info.type === 'ready') {
+        setNextWeekInfo(info);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[dogId, user]);
 
   const toggleDone = useCallback(async (i)=>{
     const next = {...done,[i]:!done[i]};
@@ -1999,6 +2014,18 @@ Réponds UNIQUEMENT en JSON :
         <span>🐾</span>
         <span>Ajouter un autre Boule de poils</span>
       </div>
+
+      {/* Next week ready banner */}
+      {nextWeekInfo && (
+        <div style={{background:"#E8F2EC",border:"1px solid #2D6444",borderRadius:12,padding:"12px 16px",margin:"10px 16px 0",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:20}}>📅</span>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:600,color:"#1C3D2A",fontSize:14}}>Ton programme de la semaine {nextWeekInfo.weekNum} est prêt !</div>
+            <div style={{fontSize:12,color:"#2D6444",marginTop:2}}>Il sera activé automatiquement lundi prochain.</div>
+          </div>
+          <button onClick={()=>setNextWeekInfo(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#9A8070",fontSize:20,lineHeight:1,padding:"0 4px"}}>×</button>
+        </div>
+      )}
 
       {/* Content */}
       <div className="dash-layout">
@@ -2411,6 +2438,67 @@ function dogToSupabaseRow(userId, profile, plan) {
     program_start_date: new Date().toISOString().split('T')[0],
     status: 'active',
   };
+}
+
+// ─── NEXT WEEK AUTO-GENERATION ───────────────────────────────────────────
+// Vérifie si on doit pré-générer la semaine suivante (jour 6-7 de la semaine courante)
+// ou promouvoir un plan déjà généré (jour 1 de la nouvelle semaine)
+// Nécessite ces colonnes Supabase : next_week_plan JSONB, next_week_number INTEGER
+async function checkAndGenerateNextWeek(dogId, profile) {
+  if (!dogId || dogId.startsWith('local_')) return null;
+  try {
+    const { data: row } = await supabase.from('dogs')
+      .select('program_start_date, next_week_plan, next_week_number, current_week')
+      .eq('id', dogId).single();
+    if (!row?.program_start_date) return null;
+
+    const startDate = new Date(row.program_start_date);
+    const now = new Date();
+    const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+    const weekDay = (daysSinceStart % 7) + 1; // 1-7 dans la semaine courante
+    const weekNum = Math.floor(daysSinceStart / 7) + 1; // numéro de semaine actuel
+
+    // Jour 1 d'une nouvelle semaine ET plan pré-généré disponible → promotion
+    if (weekDay === 1 && row.next_week_plan && row.next_week_number === weekNum) {
+      await supabase.from('dogs').update({
+        current_plan: row.next_week_plan,
+        current_week: weekNum,
+        next_week_plan: null,
+        next_week_number: null,
+        plan_generated_at: new Date().toISOString(),
+      }).eq('id', dogId);
+      console.log('[NextWeek] Plan semaine', weekNum, 'promu ✓');
+      return { type: 'promoted', plan: row.next_week_plan, weekNum };
+    }
+
+    // Jour 6 ou 7 ET pas encore de plan suivant → génération
+    if (weekDay >= 6 && !row.next_week_plan) {
+      const nextWeekNum = weekNum + 1;
+      console.log('[NextWeek] Génération semaine', nextWeekNum, '...');
+      try {
+        const nextPlan = await generatePlanForDog({ ...profile, currentWeek: nextWeekNum });
+        await supabase.from('dogs').update({
+          next_week_plan: nextPlan,
+          next_week_number: nextWeekNum,
+        }).eq('id', dogId);
+        console.log('[NextWeek] Plan semaine', nextWeekNum, 'généré et sauvegardé ✓');
+        return { type: 'ready', plan: nextPlan, weekNum: nextWeekNum };
+      } catch (e) {
+        console.error('[NextWeek] Génération échouée:', e);
+        return null;
+      }
+    }
+
+    // Plan déjà pré-généré → retourner pour afficher la bannière
+    if (row.next_week_plan) {
+      return { type: 'ready', plan: row.next_week_plan, weekNum: row.next_week_number };
+    }
+
+    return null;
+  } catch (e) {
+    console.error('[NextWeek] Exception:', e);
+    return null;
+  }
 }
 
 // ─── MAIN APP ────────────────────────────────────────────────────────────
