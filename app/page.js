@@ -2532,6 +2532,13 @@ export default function App() {
   useEffect(()=>{
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[Auth event]', event, session?.user?.email ?? 'no session');
+      // Filet de sécurité PKCE : si init() a fini sans session (race condition),
+      // et que SIGNED_IN arrive ensuite (token exchange PKCE terminé), on relance le flux
+      if (event === 'SIGNED_IN' && initDoneRef.current && session?.user) {
+        console.log('[Auth] SIGNED_IN post-init → relance handleSignIn');
+        handleSignIn(session.user);
+        return;
+      }
       if (event === 'SIGNED_OUT') {
         // Vérifier qu'il n'y a vraiment plus de session avant de rediriger
         // (Supabase peut émettre SIGNED_OUT lors d'un refresh raté, même si la session existe encore)
@@ -2622,6 +2629,9 @@ export default function App() {
               const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
               console.log('[Init] pending_dog âge:', hoursOld.toFixed(1), 'h, chien:', pending.name);
               if (hoursOld < 24) {
+                // Désactiver le timeout de sécurité — la génération prend ~30s
+                initHandled = true;
+                clearTimeout(safetyTimeout);
                 setScr("generating");
                 let plan = null;
                 try {
@@ -2712,9 +2722,55 @@ export default function App() {
       setScr(localDogs.length > 1 ? "select" : "dashboard");
       return;
     }
-    // 3. Pending dog
+    // 3. Pending dog → générer le plan directement (cas PKCE : init() a déjà terminé)
     const pendingRaw = localStorage.getItem('canymo_pending_dog') || sessionStorage.getItem('canymo_pending_dog_backup');
-    if (pendingRaw) { setScr("generating"); return; } // init() prendra le relais au prochain render
+    if (pendingRaw) {
+      try {
+        const pending = JSON.parse(pendingRaw);
+        const hoursOld = (Date.now() - new Date(pending.created_at).getTime()) / 3600000;
+        if (hoursOld < 24) {
+          setScr("generating");
+          let plan = null;
+          try {
+            plan = await generatePlanForDog(pending);
+          } catch (e) {
+            console.error('[handleSignIn] Erreur génération:', e);
+            localStorage.removeItem('canymo_pending_dog');
+            sessionStorage.removeItem('canymo_pending_dog_backup');
+            setScr("welcome");
+            return;
+          }
+          localStorage.removeItem('canymo_pending_dog');
+          sessionStorage.removeItem('canymo_pending_dog_backup');
+          const userId = signedInUser.id;
+          const p = {...pending, currentWeek: 1};
+          const id = `local_${Date.now()}`;
+          const newDog = {id, profile: {...p, id}, plan};
+          await save("cny_dogs", [newDog]);
+          await save("cny_active", id);
+          try {
+            await supabase.from("profiles").upsert({ id: userId }, { onConflict: 'id' });
+            const row = dogToSupabaseRow(userId, p, plan);
+            const { data: inserted, error: insertErr } = await supabase.from("dogs").insert(row).select().single();
+            if (!insertErr && inserted) {
+              const sbDog = {id: inserted.id, profile: {...p, id: inserted.id}, plan};
+              await save("cny_dogs", [sbDog]);
+              await save("cny_active", inserted.id);
+              setDogs([sbDog]);
+              setActiveDogId(inserted.id);
+              setScr("dashboard");
+              return;
+            }
+          } catch {}
+          setDogs([newDog]);
+          setActiveDogId(id);
+          setScr("dashboard");
+          return;
+        }
+      } catch (e) { console.error('[handleSignIn] Erreur parsing pending_dog:', e); }
+      localStorage.removeItem('canymo_pending_dog');
+      sessionStorage.removeItem('canymo_pending_dog_backup');
+    }
     // 4. Rien → onboarding
     setScr("onboarding");
   }, [loadUserDogs]);
