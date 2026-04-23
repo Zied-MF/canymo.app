@@ -1139,7 +1139,7 @@ function TabBilan({ profile, plan, recaps, onGenerateBilan, doneHistory, weights
                     <div className="bilan-loading">🤖 Génération du bilan en cours...</div>
                   ) : (
                     <button className="btn btn-g btn-sm" onClick={()=>handleGenerate(w)}>
-                      🤖 Générer le bilan IA
+                      🤖 Générer le bilan
                     </button>
                   )}
                 </div>
