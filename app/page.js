@@ -921,7 +921,7 @@ function TabProgramme({ plan, profile, done, onToggle, onHardWeek, isPro, onPayw
 
       <div className="hw-card">
         <div className="hw-title">😓 Semaine difficile ?</div>
-        <div className="hw-sub">Tu n'as pas pu sortir cette semaine ? L'IA va adapter le programme.</div>
+        <div className="hw-sub">Tu n'as pas pu sortir cette semaine ? Canymo va adapter le programme.</div>
         <button className="btn hw-btn btn-sm" onClick={onHardWeek}>🔄 Adapter</button>
       </div>
     </div>
